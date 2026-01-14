@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural Face: Voice Activated</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden; 
+        }
+
+        h1 { margin: 0 0 5px 0; color: #333; font-size: 1.5rem; text-align: center; }
+        p.subtitle { margin: 0 0 15px 0; color: #666; font-size: 0.9em; text-align: center; }
+
+        .main-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 1100px;
+            width: 100%;
+            height: calc(100vh - 100px);
+            align-items: stretch;
+        }
+
+        /* --- The Drawing Area --- */
+        .canvas-wrapper {
+             flex: 1 1 400px;
+             display: flex;
+             flex-direction: column;
+             justify-content: center;
+             align-items: center;
+             background: #fafafa;
+             border-radius: 8px;
+             border: 2px dashed #ddd;
+             position: relative;
+             overflow: hidden;
+        }
+
+        .canvas-container {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1/1;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Status indicator for mic */
+        .mic-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ccc;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .mic-active {
+            background-color: #4caf50; /* Green */
+            box-shadow: 0 0 10px #4caf50;
+        }
+
+        /* --- The Controls Area --- */
+        .controls-wrapper {
+            flex: 1 1 300px;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            height: 100%; 
+            border-left: 1px solid #eee;
+            padding-left: 20px;
+        }
+
+        .controls-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .controls-footer {
+            flex-shrink: 0;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            margin-top: 10px;
+            background: white;
+        }
+
+        .control-group {
+            border: 1px solid #eee;
+            padding: 12px;
+            border-radius: 8px;
+            background: #fcfcfc;
+            margin-bottom: 12px;
+        }
+
+        .control-group h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.85rem;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 4px;
+        }
+
+        .slider-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            background: white;
+            cursor: pointer;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: #666;
+            flex: 1.2;
+        }
+
+        input[type="range"] {
+            flex: 2;
+            cursor: pointer;
+        }
+
+        /* --- SVG Styles --- */
+        .sketch-lines path, .sketch-lines circle {
+            fill: none;
+            stroke: #222;
+            stroke-width: 2.5; 
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vector-effect: non-scaling-stroke; 
+        }
+        
+        .mouth-interior { fill: #333; stroke: none; }
+        .tongue-fill { fill: #e57373; stroke: none; }
+        .teeth-fill { fill: #fff; stroke: none; }
+        .mouth-fill { fill: rgba(0,0,0,0.15); stroke: none; }
+        .eyeball-fill { fill: #fff; stroke: #222; stroke-width: 1.5; }
+        .eyelid-mask { fill: #fafafa; stroke: none; }
+
+        /* --- Buttons --- */
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .full-width-btn { grid-column: span 2; }
+
+        button {
+            padding: 12px;
+            background-color: #e0e0e0;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        button:hover { background-color: #d0d0d0; }
+        button.primary { background-color: #333; color: white; }
+        button.primary:hover { background-color: #555; }
+        button.record { background-color: #ff5252; color: white; }
+        button.record:hover { background-color: #ff1744; }
+        button.action { background-color: #4a90e2; color: white; margin-top: 10px; width: 100%;}
+        
+        #fileInput { display: none; }
+
+        @media (max-width: 800px) {
+            body { height: auto; overflow: auto; }
+            .main-layout { height: auto; flex-direction: column; }
+            .controls-wrapper { border-left: none; padding-left: 0; max-width: 100%; height: auto;}
+            .controls-scroll { overflow: visible; }
+            .controls-footer { position: sticky; bottom: 0; padding-bottom: 20px; box-shadow: 0 -5px 10px rgba(0,0,0,0.05);}
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Procedural Face: Voice Edition</h1>
+    <p class="subtitle">Enable the mic to animate the face with your voice.</p>
+
+    <div class="main-layout">
+        <div class="canvas-wrapper">
+            <div class="canvas-container">
+                <div id="micStatus" class="mic-status"></div>
+
+                <svg viewBox="0 0 400 400" id="faceSvg" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="sketchFilter" x="-20%" y="-20%" width="140%" height="140%">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" result="noise" />
+                            <feDisplacementMap id="displacementMap" in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G" />
+                        </filter>
+                    </defs>
+
+                    <rect width="100%" height="100%" fill="#fafafa" />
+
+                    <g id="eyeballsGroup">
+                        <circle id="leftEyeball" class="eyeball-fill" cx="0" cy="0" r="1"/>
+                        <circle id="rightEyeball" class="eyeball-fill" cx="0" cy="0" r="1"/>
+                    </g>
+
+                    <g class="sketch-lines" filter="url(#sketchFilter)">
+                        <path id="faceShape" d="" />
+                        <path id="nose" d="" />
+                        <path id="brows" d="" />
+                        <path id="leftPupil" d="" stroke-width="3" />
+                        <path id="rightPupil" d="" stroke-width="3" />
+                    </g>
+
+                    <g id="mouthInteriorGroup">
+                        <path id="mouthCavity" class="mouth-interior" d="" />
+                        <path id="tongueShape" class="tongue-fill" d="" />
+                        <path id="teethTop" class="teeth-fill" d="" />
+                    </g>
+
+                    <g class="sketch-lines" filter="url(#sketchFilter)">
+                        <path id="mouthTop" d="" />
+                        <path id="mouthBottom" d="" />
+                        <path id="teethLine" d="" stroke-width="1.5" /> 
+                    </g>
+
+                    <g id="eyelidsGroup">
+                         <rect id="leftLidTop" class="eyelid-mask" x="0" y="0" width="0" height="0" />
+                         <rect id="leftLidBot" class="eyelid-mask" x="0" y="0" width="0" height="0" />
+                         <rect id="rightLidTop" class="eyelid-mask" x="0" y="0" width="0" height="0" />
+                         <rect id="rightLidBot" class="eyelid-mask" x="0" y="0" width="0" height="0" />
+                     </g>
+                     
+                     <g class="sketch-lines" filter="url(#sketchFilter)">
+                        <path id="leftEyeOutline" d="" />
+                        <path id="rightEyeOutline" d="" />
+                     </g>
+                </svg>
+            </div>
+             <button class="action" onclick="downloadImage()">Download PNG</button>
+        </div>
+
+        <div class="controls-wrapper">
+            <div class="controls-scroll">
+                
+                <div class="control-group" style="background: #ffebee; border-color: #ef9a9a;">
+                    <h3>Audio Input</h3>
+                    <button class="record full-width-btn" id="micBtn" onclick="toggleMic()">Enable Microphone</button>
+                    <div class="slider-row" style="margin-top:10px;">
+                        <label>Mic Sensitivity</label>
+                        <input type="range" id="micSensitivity" min="1" max="10" value="5">
+                    </div>
+                    <div style="font-size:0.75rem; color:#666; margin-top:5px; line-height:1.4;">
+                        *Note: If mic fails, you may need to run this on a local server (VS Code Live Server) due to browser security.
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Mouth Pose (Manual)</h3>
+                    <select id="mouthPreset" onchange="applyMouthPreset()">
+                        <option value="REST">Neutral / Rest</option>
+                        <option value="A">A (Apple) - Jaw Drop</option>
+                        <option value="E">E (Eat) - Wide Stretch</option>
+                        <option value="O">O (Go) - Oval</option>
+                        <option value="U">U / Q (You) - Pucker</option>
+                        <option value="W">W / R (Wait) - Tight</option>
+                        <option value="M">M / B / P - Closed</option>
+                        <option value="F">F / V - Bite Lip</option>
+                        <option value="L">L / N - Tongue Up</option>
+                        <option value="T">T / S - Teeth Clench</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <h3>Mouth Details</h3>
+                    <div class="slider-row">
+                        <label>Jaw Open</label>
+                        <input type="range" id="mouthOpen" min="0" max="60" value="5">
+                    </div>
+                     <div class="slider-row">
+                        <label>Width</label>
+                        <input type="range" id="mouthWidth" min="20" max="110" value="60">
+                    </div>
+                    <div class="slider-row">
+                        <label>Lip Curl</label>
+                        <input type="range" id="lipCurl" min="-20" max="30" value="0">
+                    </div>
+                     <div class="slider-row">
+                        <label>Teeth Show</label>
+                        <input type="range" id="teethPos" min="0" max="25" value="0">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Style & Shape</h3>
+                    <div class="slider-row">
+                        <label>Line Sketch</label>
+                        <input type="range" id="lineQuality" min="0" max="15" step="0.5" value="4">
+                    </div>
+                    <div class="slider-row">
+                        <label>Face Width</label>
+                        <input type="range" id="faceWidth" min="100" max="280" value="200">
+                    </div>
+                </div>
+                
+                <input type="hidden" id="earSize" value="25">
+                <input type="hidden" id="earY" value="0">
+                <input type="hidden" id="eyeSpacing" value="55">
+                <input type="hidden" id="eyeSize" value="40">
+                <input type="hidden" id="pupilPos" value="50">
+                <input type="hidden" id="lidTop" value="10">
+                <input type="hidden" id="lidBot" value="5">
+                <input type="hidden" id="noseWidth" value="25">
+                <input type="hidden" id="noseScale" value="1">
+                <input type="hidden" id="noseLength" value="65">
+                <input type="hidden" id="mouthY" value="55">
+                <input type="hidden" id="lipFullness" value="15">
+                <input type="hidden" id="tongueHeight" value="5">
+
+            </div>
+
+            <div class="controls-footer">
+                <div class="button-group">
+                    <button class="primary full-width-btn" onclick="randomize()">Randomize Face</button>
+                    <button onclick="saveData()">Save Data</button>
+                    <button onclick="triggerLoad()">Load Data</button>
+                </div>
+                <input type="file" id="fileInput" accept=".json">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CX = 200;
+        const CY = 200;
+
+        // --- VISEME DATA ---
+        const visemes = {
+            REST: { open: 2, width: 60, curl: 0, teeth: 0 },
+            A:    { open: 55, width: 70, curl: 20, teeth: 5 },
+            E:    { open: 20, width: 95, curl: 10, teeth: 15 },
+            O:    { open: 45, width: 35, curl: -10, teeth: 0 },
+            U:    { open: 15, width: 25, curl: -5, teeth: 0 },
+            W:    { open: 20, width: 35, curl: 5, teeth: 0 },
+            M:    { open: 0, width: 60, curl: 0, teeth: 0 },
+            F:    { open: 15, width: 65, curl: 5, teeth: 18 },
+            L:    { open: 35, width: 65, curl: 10, teeth: 10 },
+            T:    { open: 10, width: 80, curl: 5, teeth: 12 }
+        };
+
+        const inputs = {
+            micSensitivity: document.getElementById('micSensitivity'),
+            mouthOpen: document.getElementById('mouthOpen'),
+            mouthWidth: document.getElementById('mouthWidth'),
+            lipCurl: document.getElementById('lipCurl'),
+            teethPos: document.getElementById('teethPos'),
+            tongueHeight: document.getElementById('tongueHeight'),
+            lineQuality: document.getElementById('lineQuality'),
+            faceWidth: document.getElementById('faceWidth'),
+            earSize: document.getElementById('earSize'),
+            earY: document.getElementById('earY'),
+            eyeSpacing: document.getElementById('eyeSpacing'),
+            eyeSize: document.getElementById('eyeSize'),
+            pupilPos: document.getElementById('pupilPos'),
+            lidTop: document.getElementById('lidTop'),
+            lidBot: document.getElementById('lidBot'),
+            noseWidth: document.getElementById('noseWidth'),
+            noseScale: document.getElementById('noseScale'),
+            noseLength: document.getElementById('noseLength'),
+            mouthY: document.getElementById('mouthY'),
+            lipFullness: document.getElementById('lipFullness'),
+        };
+
+        const paths = {
+            displacementMap: document.getElementById('displacementMap'),
+            faceShape: document.getElementById('faceShape'),
+            nose: document.getElementById('nose'),
+            brows: document.getElementById('brows'),
+            leftEyeOutline: document.getElementById('leftEyeOutline'),
+            rightEyeOutline: document.getElementById('rightEyeOutline'),
+            leftEyeball: document.getElementById('leftEyeball'),
+            rightEyeball: document.getElementById('rightEyeball'),
+            leftPupil: document.getElementById('leftPupil'),
+            rightPupil: document.getElementById('rightPupil'),
+            leftLidTop: document.getElementById('leftLidTop'),
+            leftLidBot: document.getElementById('leftLidBot'),
+            rightLidTop: document.getElementById('rightLidTop'),
+            rightLidBot: document.getElementById('rightLidBot'),
+            mouthCavity: document.getElementById('mouthCavity'),
+            mouthTop: document.getElementById('mouthTop'),
+            mouthBottom: document.getElementById('mouthBottom'),
+            teethTop: document.getElementById('teethTop'),
+            teethLine: document.getElementById('teethLine'),
+            tongueShape: document.getElementById('tongueShape'),
+        };
+
+        const fileInput = document.getElementById('fileInput');
+
+        // --- AUDIO VARIABLES ---
+        let audioContext;
+        let analyser;
+        let microphone;
+        let isMicOn = false;
+        let animationFrame;
+        
+        // Physics for smoothing
+        let targetOpen = 0;
+        let currentOpen = 0;
+        let targetWidth = 60;
+        let currentWidth = 60;
+
+        function applyMouthPreset() {
+            const val = document.getElementById('mouthPreset').value;
+            const data = visemes[val];
+            if(data) {
+                inputs.mouthOpen.value = data.open;
+                inputs.mouthWidth.value = data.width;
+                inputs.lipCurl.value = data.curl;
+                inputs.teethPos.value = data.teeth;
+                // Stop audio override if manual interaction happens
+                draw();
+            }
+        }
+
+        async function toggleMic() {
+            const btn = document.getElementById('micBtn');
+            const status = document.getElementById('micStatus');
+            
+            if (isMicOn) {
+                // Turn Off
+                if(audioContext) audioContext.close();
+                cancelAnimationFrame(animationFrame);
+                isMicOn = false;
+                btn.textContent = "Enable Microphone";
+                btn.classList.remove('primary');
+                status.classList.remove('mic-active');
+                return;
+            }
+
+            // Turn On
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                analyser.fftSize = 512;
+                
+                isMicOn = true;
+                btn.textContent = "Stop Microphone";
+                btn.classList.add('primary');
+                status.classList.add('mic-active');
+                
+                analyzeAudio();
+
+            } catch (err) {
+                alert("Microphone access denied or not supported. Try running on localhost.");
+                console.error(err);
+            }
+        }
+
+        function analyzeAudio() {
+            if (!isMicOn) return;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            // 1. Calculate Volume (RMS) - Drives Jaw Open
+            let sum = 0;
+            // Focus on vocal frequencies (indices 5 to 50 roughly in 512 FFT)
+            for (let i = 5; i < 50; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / 45;
+            const sensitivity = parseFloat(inputs.micSensitivity.value);
+            
+            // Map volume to 0-60 range
+            let openVal = (average * sensitivity) / 3;
+            if(openVal > 60) openVal = 60;
+            if(openVal < 2) openVal = 2; // Min open
+            
+            targetOpen = openVal;
+
+            // 2. Detect "Sibilance" (High Pitch) - Drives Width/Teeth
+            let highFreqSum = 0;
+            for(let i = 100; i < 200; i++) {
+                highFreqSum += dataArray[i];
+            }
+            const highAvg = highFreqSum / 100;
+            
+            if (highAvg > 10) {
+                // Sibilant sound (S, T) -> Wide mouth
+                targetWidth = 80 + (highAvg/2);
+            } else {
+                // Normal -> Rest width (60) or slightly O if loud
+                if (targetOpen > 40) targetWidth = 45; // O shape
+                else targetWidth = 60; // Neutral
+            }
+
+            // 3. Smooth transitions (Lerp)
+            // Move current values 20% closer to target each frame
+            currentOpen = currentOpen + (targetOpen - currentOpen) * 0.2;
+            currentWidth = currentWidth + (targetWidth - currentWidth) * 0.1;
+
+            // 4. Update Inputs & Draw
+            inputs.mouthOpen.value = currentOpen;
+            inputs.mouthWidth.value = currentWidth;
+            
+            // Auto teeth based on width (wide mouth = teeth)
+            if (currentWidth > 75) inputs.teethPos.value = 15;
+            else inputs.teethPos.value = 0;
+
+            draw();
+
+            animationFrame = requestAnimationFrame(analyzeAudio);
+        }
+
+
+        function draw() {
+            paths.displacementMap.setAttribute('scale', inputs.lineQuality.value);
+
+            const vals = {};
+            for (const key in inputs) { vals[key] = parseFloat(inputs[key].value); }
+            
+            const fwH = vals.faceWidth / 2; 
+            const noseTipY = (CY - 40) + vals.noseLength;
+
+            // --- FACE ---
+            const faceLeftX = CX - fwH;
+            const faceRightX = CX + fwH;
+            const earYStart = CY - 20 + vals.earY;
+            paths.faceShape.setAttribute('d', `M ${faceLeftX} ${CY - 90} L ${faceLeftX} ${earYStart} C ${faceLeftX - vals.earSize} ${earYStart}, ${faceLeftX - vals.earSize} ${earYStart + vals.earSize*1.5}, ${faceLeftX} ${earYStart + vals.earSize*1.5} L ${faceLeftX} ${CY + 120} M ${faceRightX} ${CY - 90} L ${faceRightX} ${earYStart} C ${faceRightX + vals.earSize} ${earYStart}, ${faceRightX + vals.earSize} ${earYStart + vals.earSize*1.5}, ${faceRightX} ${earYStart + vals.earSize*1.5} L ${faceRightX} ${CY + 120}`);
+            
+            // --- NOSE ---
+            const noseTopY = CY - 40;
+            const bridgeW = vals.noseWidth / 2;
+            paths.nose.setAttribute('d', `M ${CX - bridgeW} ${noseTopY} L ${CX - bridgeW} ${noseTopY + vals.noseLength * 0.6} M ${CX + bridgeW} ${noseTopY} L ${CX + bridgeW} ${noseTopY + vals.noseLength * 0.6} M ${CX - bridgeW} ${noseTopY + vals.noseLength * 0.6} Q ${CX - bridgeW * 2 * vals.noseScale} ${noseTipY}, ${CX} ${noseTipY + 10 * vals.noseScale} Q ${CX + bridgeW * 2 * vals.noseScale} ${noseTipY}, ${CX + bridgeW} ${noseTopY + vals.noseLength * 0.6}`);
+
+            // --- MOUTH ---
+            const mY = noseTipY + vals.mouthY;
+            const mW = vals.mouthWidth / 2;
+            const openAmt = vals.mouthOpen;
+            const curl = vals.lipCurl;
+            
+            const topLipY = mY;
+            const topLipCurveY = mY - 5 - (curl/3);
+            const botLipY = mY + openAmt; 
+            const botLipCurveY = botLipY + 5 + (curl/3);
+
+            // Cavity
+            paths.mouthCavity.setAttribute('d', `M ${CX - mW} ${mY} Q ${CX} ${topLipCurveY + 5} ${CX + mW} ${mY} L ${CX + mW} ${botLipY} Q ${CX} ${botLipCurveY - 5} ${CX - mW} ${botLipY} Z`);
+
+            // Teeth
+            const teethH = vals.teethPos;
+            if (teethH > 1) {
+                const tW = mW * 0.8;
+                paths.teethTop.setAttribute('d', `M ${CX - tW} ${mY + 2} L ${CX + tW} ${mY + 2} L ${CX + tW * 0.9} ${mY + teethH} Q ${CX} ${mY + teethH + 2} ${CX - tW * 0.9} ${mY + teethH} Z`);
+                paths.teethLine.setAttribute('d', `M ${CX - tW * 0.9} ${mY + teethH} Q ${CX} ${mY + teethH + 2} ${CX + tW * 0.9} ${mY + teethH}`);
+            } else {
+                paths.teethTop.setAttribute('d', '');
+                paths.teethLine.setAttribute('d', '');
+            }
+
+            // Tongue
+            const tongH = vals.tongueHeight;
+            if (tongH > 2) {
+                const tW = mW * 0.6;
+                const baseY = botLipY - 2;
+                const tipY = baseY - tongH;
+                paths.tongueShape.setAttribute('d', `M ${CX - tW} ${baseY} Q ${CX} ${tipY} ${CX + tW} ${baseY} Z`);
+            } else {
+                paths.tongueShape.setAttribute('d', '');
+            }
+
+            // Outlines
+            paths.mouthTop.setAttribute('d', `M ${CX - mW} ${topLipY} Q ${CX} ${topLipCurveY} ${CX + mW} ${topLipY}`);
+            paths.mouthBottom.setAttribute('d', `M ${CX - mW} ${botLipY} Q ${CX} ${botLipCurveY} ${CX + mW} ${botLipY}`);
+
+            // --- EYES ---
+            const eyeCenterY = CY - 50;
+            const eyeH = vals.eyeSize * 0.6; 
+            const leCenterX = CX - vals.eyeSpacing;
+            const reCenterX = CX + vals.eyeSpacing;
+            const eyeW_H = vals.eyeSize / 2;
+
+            paths.leftEyeball.setAttribute('cx', leCenterX); paths.leftEyeball.setAttribute('cy', eyeCenterY); paths.leftEyeball.setAttribute('r', eyeW_H * 0.8);
+            paths.rightEyeball.setAttribute('cx', reCenterX); paths.rightEyeball.setAttribute('cy', eyeCenterY); paths.rightEyeball.setAttribute('r', eyeW_H * 0.8);
+
+            const eyeTopY = eyeCenterY - eyeH/2;
+            const eyeBotY = eyeCenterY + eyeH/2;
+            const getEyePath = (cx) => `M ${cx - eyeW_H} ${eyeCenterY} Q ${cx} ${eyeTopY - eyeH*0.3}, ${cx + eyeW_H} ${eyeCenterY} Q ${cx} ${eyeBotY + eyeH*0.3}, ${cx - eyeW_H} ${eyeCenterY} Z`;
+            paths.leftEyeOutline.setAttribute('d', getEyePath(leCenterX));
+            paths.rightEyeOutline.setAttribute('d', getEyePath(reCenterX));
+
+            const pPos = vals.pupilPos / 100;
+            const pupilShiftRange = eyeW_H * 0.5; 
+            const currentShift = (pPos * pupilShiftRange * 2) - pupilShiftRange;
+            const pupilH = eyeH * 0.7;
+            paths.leftPupil.setAttribute('d', `M ${leCenterX + currentShift} ${eyeCenterY - pupilH/2} L ${leCenterX + currentShift} ${eyeCenterY + pupilH/2}`);
+            paths.rightPupil.setAttribute('d', `M ${reCenterX + currentShift} ${eyeCenterY - pupilH/2} L ${reCenterX + currentShift} ${eyeCenterY + pupilH/2}`);
+
+            // Brows
+            const browY = eyeTopY - 20;
+            paths.brows.setAttribute('d', `M ${leCenterX - eyeW_H - 5} ${browY} Q ${leCenterX} ${browY - 15}, ${leCenterX + eyeW_H + 5} ${browY} M ${reCenterX - eyeW_H - 5} ${browY} Q ${reCenterX} ${browY - 15}, ${reCenterX + eyeW_H + 5} ${browY}`);
+
+            // Lids
+            const totalLidAreaH = (eyeBotY - eyeTopY) + 20;
+            const lidAreaTop = eyeTopY - 10;
+            const lidT_Pct = vals.lidTop / 100;
+            const lidB_Pct = vals.lidBot / 100;
+            const lidW = vals.eyeSize + 20;
+            const setLid = (el, x, y, w, h) => { el.setAttribute('x', x); el.setAttribute('y', y); el.setAttribute('width', w); el.setAttribute('height', h); };
+            setLid(paths.leftLidTop, leCenterX - lidW/2, lidAreaTop, lidW, totalLidAreaH * lidT_Pct);
+            setLid(paths.leftLidBot, leCenterX - lidW/2, lidAreaTop + totalLidAreaH - (totalLidAreaH * lidB_Pct), lidW, totalLidAreaH * lidB_Pct);
+            setLid(paths.rightLidTop, reCenterX - lidW/2, lidAreaTop, lidW, totalLidAreaH * lidT_Pct);
+            setLid(paths.rightLidBot, reCenterX - lidW/2, lidAreaTop + totalLidAreaH - (totalLidAreaH * lidB_Pct), lidW, totalLidAreaH * lidB_Pct);
+        }
+
+        function randomize() {
+            inputs.teethPos.value = Math.random() < 0.3 ? (Math.random() * 20) : 0; 
+            inputs.tongueHeight.value = Math.random() < 0.2 ? (Math.random() * 25) : 5; 
+            inputs.lineQuality.value = (Math.random() * 10) + 2; 
+            inputs.lidTop.value = Math.random() * 30;
+            inputs.pupilPos.value = Math.random() * 100;
+            document.getElementById('mouthPreset').value = "REST";
+            draw();
+        }
+
+        function downloadImage() {
+            const svgElement = document.getElementById('faceSvg');
+            const styleElement = document.createElementNS("http://www.w3.org/2000/svg", "style");
+            styleElement.textContent = `
+                .sketch-lines path, .sketch-lines circle { fill: none; stroke: #222; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
+                .mouth-interior { fill: #333; stroke: none; }
+                .tongue-fill { fill: #e57373; stroke: none; }
+                .teeth-fill { fill: #fff; stroke: none; }
+                .mouth-fill { fill: rgba(0,0,0,0.15); stroke: none; }
+                .eyeball-fill { fill: #fff; stroke: #222; stroke-width: 1.5px; }
+                .eyelid-mask { fill: #fafafa; stroke: none; }
+                rect { fill: #fafafa; }
+            `;
+            svgElement.prepend(styleElement);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const serializer = new XMLSerializer();
+            const svgData = serializer.serializeToString(svgElement);
+            svgElement.removeChild(styleElement);
+            const img = new Image();
+            canvas.width = 800; canvas.height = 800;
+            img.onload = function() {
+                ctx.fillStyle = "#fafafa";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const a = document.createElement('a');
+                a.download = `voice_face_${Date.now()}.png`;
+                a.href = canvas.toDataURL('image/png');
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            };
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        }
+
+        function saveData() {
+            const data = {};
+            for (const key in inputs) data[key] = inputs[key].value;
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: "application/json"}));
+            a.download = `facedata_${Date.now()}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        function triggerLoad() { fileInput.click(); }
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    for (const key in data) if (inputs[key]) inputs[key].value = data[key];
+                    draw();
+                } catch (err) { alert("Invalid JSON file"); }
+                fileInput.value = ''; 
+            };
+            reader.readAsText(file);
+        });
+
+        Object.values(inputs).forEach(input => input.addEventListener('input', draw));
+        draw();
+    </script>
+</body>
+</html>
