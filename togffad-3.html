@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Togffad Health Clinic & Institute</title>
+    <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --primary: #0f3460; /* Deep Medical Blue */
+            --accent: #53a8b6;  /* Calm Teal */
+            --light: #f6f9fc;   /* Clinical White */
+            --text: #333333;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.85);
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* --- BACKGROUND ANIMATION LAYER --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--glass);
+            padding: 10px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            white-space: nowrap;
+        }
+
+        .logo-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--accent);
+        }
+
+        .pill-dock {
+            display: flex;
+            background: var(--glass);
+            padding: 6px;
+            border-radius: 50px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.5);
+            gap: 5px;
+        }
+
+        .nav-pill {
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 10px 24px;
+            border-radius: 40px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-pill:hover {
+            background: rgba(83, 168, 182, 0.1);
+            color: var(--accent);
+        }
+
+        .nav-pill.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 12px rgba(83, 168, 182, 0.4);
+            transform: scale(1.02);
+        }
+
+        .cta-btn {
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(15, 52, 96, 0.3);
+            transition: transform 0.2s;
+            display: flex;
+            white-space: nowrap;
+        }
+        .cta-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* --- HERO SECTION --- */
+        header {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 10% 0; 
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 650px;
+            z-index: 2;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 1s forwards 0.5s;
+        }
+
+        .tagline {
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            background: rgba(83, 168, 182, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        h1 {
+            font-size: 3.8rem;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+
+        p.hero-desc {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            margin-bottom: 2.5rem;
+            color: #555;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            background: var(--accent);
+            box-shadow: 0 10px 20px rgba(83, 168, 182, 0.3);
+        }
+
+        /* --- SLIDER COMPONENT --- */
+        .slider-container {
+            height: 40px;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        .slider-text {
+            font-size: 1.4rem;
+            color: var(--accent);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            animation: slideUp 6s infinite;
+        }
+
+        /* --- SECTIONS --- */
+        section { padding: 6rem 10%; }
+        .section-title { text-align: center; margin-bottom: 4rem; }
+        .section-title h2 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
+        .section-title .divider { width: 60px; height: 4px; background: var(--accent); margin: 0 auto; border-radius: 2px; }
+
+        /* --- CARDS --- */
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .card { background: var(--white); padding: 2.5rem; border-radius: 24px; box-shadow: var(--shadow); transition: all 0.4s ease; position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
+        .card-icon { font-size: 2.5rem; margin-bottom: 1.5rem; background: rgba(83, 168, 182, 0.1); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--primary); }
+        .card h3 { margin-bottom: 1rem; color: var(--primary); }
+        .card p { color: #666; line-height: 1.6; }
+
+        /* --- NEWS --- */
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .news-item { background: white; border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); transition: transform 0.3s; }
+        .news-item:hover { transform: translateY(-5px); }
+        .news-img { height: 200px; background: linear-gradient(135deg, #e0eafc, #cfdef3); display: flex; align-items: center; justify-content: center; color: #888; font-weight: 500; }
+        .news-content { padding: 1.5rem; }
+        .news-date { font-size: 0.8rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+        .news-content h4 { margin: 0.8rem 0; color: var(--primary); font-size: 1.2rem; }
+
+        /* --- CONTACT --- */
+        .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; background: var(--white); padding: 4rem; border-radius: 30px; box-shadow: var(--shadow); }
+        form { display: flex; flex-direction: column; gap: 1.5rem; }
+        input, textarea, select { padding: 18px; border: 1px solid #e0e0e0; border-radius: 12px; outline: none; background: #fcfcfc; font-size: 1rem; }
+        input:focus, textarea:focus { border-color: var(--accent); background: white; }
+        button.btn { padding: 15px 30px; background: var(--primary); color: var(--white); border: none; border-radius: 50px; font-size: 1rem; cursor: pointer; transition: 0.3s; font-weight: 600; }
+        button.btn:hover { background: var(--accent); }
+        footer { background: var(--primary); color: white; padding: 4rem 10%; text-align: center; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp {
+            0%, 20% { transform: translateY(0); }
+            25%, 45% { transform: translateY(-40px); }
+            50%, 70% { transform: translateY(-80px); }
+            75%, 100% { transform: translateY(-120px); }
+        }
+        .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.5, 0, 0, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        /* --- MOBILE RESPONSIVE TWEAKS --- */
+        @media (max-width: 900px) {
+            nav {
+                top: 0;
+                left: 0;
+                transform: none; /* Removes desktop translation */
+                width: 100%;
+                border-radius: 0;
+                background: white;
+                padding: 10px 0;
+                flex-direction: column;
+                gap: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                
+                /* This is the key centering line for mobile */
+                align-items: center; 
+            }
+            
+            .logo {
+                background: transparent;
+                box-shadow: none;
+                padding: 8px;
+            }
+
+            .pill-dock {
+                /* Intelligent Width Logic */
+                width: fit-content;
+                max-width: 95%; /* Prevents edge touching */
+                
+                /* Scrolling Logic */
+                overflow-x: auto;
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+                justify-content: flex-start;
+                padding: 5px;
+                gap: 5px;
+                
+                /* Smooth Scrolling */
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; /* Firefox */
+            }
+
+            /* Hide Scrollbar (Chrome/Safari) */
+            .pill-dock::-webkit-scrollbar { display: none; }
+
+            .nav-pill {
+                padding: 7px 14px; /* Reduced padding for mobile fit */
+                font-size: 0.85rem;
+                flex-shrink: 0;
+                background: #f4f6f8;
+            }
+
+            .cta-btn { display: none; }
+
+            header { padding: 130px 5% 0; }
+            h1 { font-size: 2.5rem; }
+            .contact-layout { grid-template-columns: 1fr; padding: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <nav>
+        <div class="logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2C9.243 2 7 4.243 7 7c0 2.757 2.243 5 5 5s5-2.243 5-5c0-2.757-2.243-5-5-5zM12 14c-5.333 0-8 2.667-8 8h16c0-5.333-2.667-8-8-8z"/></svg>
+            </div>
+            TOGFFAD
+        </div>
+
+        <div class="pill-dock">
+            <a href="#home" class="nav-pill active">Home</a>
+            <a href="#about" class="nav-pill">About</a>
+            <a href="#services" class="nav-pill">Services</a>
+            <a href="#news" class="nav-pill">News</a>
+            <a href="#contact" class="nav-pill">Contact</a>
+        </div>
+
+        <a href="#contact" class="cta-btn">Book Now</a>
+    </nav>
+
+    <header id="home">
+        <div class="hero-content">
+            <span class="tagline">HEALTH IS OUR BUSINESS</span>
+            <h1>Modern Care for<br>Body & Mind</h1>
+            
+            <div class="slider-container">
+                <div>
+                    <div class="slider-text">Advanced Cardiology</div>
+                    <div class="slider-text">Clinical Psychology</div>
+                    <div class="slider-text">Surgical Excellence</div>
+                    <div class="slider-text">Advanced Cardiology</div>
+                </div>
+            </div>
+
+            <p class="hero-desc">
+                Welcome to Togffad Institute. We combine surgical precision with psychological care to treat the whole patient. 
+                Experience world-class healthcare without borders.
+            </p>
+            <a href="#services" class="btn">Explore Our Services</a>
+        </div>
+    </header>
+
+    <section id="about" class="reveal">
+        <div class="section-title">
+            <h2>Who We Are</h2>
+            <div class="divider"></div>
+        </div>
+        <div style="text-align: center; max-width: 800px; margin: 0 auto; line-height: 1.8; color: #555; font-size: 1.1rem;">
+            <p>
+                Togffad is a premier health clinic and institute founded by a dual-specialist in Psychology and Cardio-Surgery. 
+                We believe that true healing comes from addressing both the physical heart and the emotional mind. 
+            </p>
+        </div>
+    </section>
+
+    <section id="services">
+        <div class="section-title">
+            <h2>Our Expertise</h2>
+            <div class="divider"></div>
+        </div>
+        
+        <div class="services-grid">
+            <div class="card reveal">
+                <div class="card-icon">🧠</div>
+                <h3>Clinical Psychology</h3>
+                <p>Expert counseling, cognitive behavioral therapy, and mental wellness programs designed to support your journey to recovery.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon">🫀</div>
+                <h3>Cardiology</h3>
+                <p>Advanced heart care, including non-invasive diagnostics, monitoring, and preventative strategies for a healthy heart.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon">⚕️</div>
+                <h3>General Surgery</h3>
+                <p>Minimally invasive surgical procedures performed with precision and care in our modern sterile environments.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="news" style="background: #eef5f9;">
+        <div class="section-title">
+            <h2>Institute News</h2>
+            <div class="divider"></div>
+        </div>
+        <div class="news-grid">
+            <div class="news-item reveal">
+                <div class="news-img">Heart Health</div>
+                <div class="news-content">
+                    <div class="news-date">Oct 12, 2025</div>
+                    <h4>New Cardiology Wing Opens</h4>
+                    <p style="font-size:0.9rem; color:#666;">We have expanded our facilities to include advanced echocardiogram units.</p>
+                </div>
+            </div>
+            <div class="news-item reveal">
+                <div class="news-img">Mental Wellness</div>
+                <div class="news-content">
+                    <div class="news-date">Sep 28, 2025</div>
+                    <h4>The Link Between Stress & Surgery</h4>
+                    <p style="font-size:0.9rem; color:#666;">Our latest research paper on how psychological prep improves surgical recovery.</p>
+                </div>
+            </div>
+            <div class="news-item reveal">
+                <div class="news-img">Community</div>
+                <div class="news-content">
+                    <div class="news-date">Sep 10, 2025</div>
+                    <h4>Free Health Screening Week</h4>
+                    <p style="font-size:0.9rem; color:#666;">Health is our business. Join us for complimentary BP and mental health checks.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="section-title">
+            <h2>Contact Us</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="contact-layout reveal">
+            <div class="contact-info">
+                <h3 style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;">Get in Touch</h3>
+                <p style="line-height: 1.6; color: #666;">Ready to prioritize your health? Contact our reception today.</p>
+                <br>
+                <div style="margin-top: 1rem;">
+                    <p><strong>Email:</strong> care@togffad.com</p>
+                    <p><strong>Phone:</strong> +234 800 TOGFFAD</p>
+                    <p><strong>Address:</strong> Togffad Institute</p>
+                </div>
+            </div>
+
+            <form>
+                <input type="text" placeholder="Your Name" required>
+                <input type="email" placeholder="Email Address" required>
+                <select>
+                    <option>Select Service</option>
+                    <option>Psychology Appointment</option>
+                    <option>Cardiology Consultation</option>
+                    <option>Surgery Inquiry</option>
+                </select>
+                <textarea rows="4" placeholder="How can we help you?"></textarea>
+                <button type="submit" class="btn" style="width: 100%;">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <span style="font-size: 2rem; font-weight: bold; display: block; margin-bottom: 10px;">TOGFFAD</span>
+        <p>Health is our business.</p>
+        <br>
+        <p style="font-size: 0.8rem; opacity: 0.7;">&copy; 2026 Togffad Clinic & Institute.</p>
+    </footer>
+
+    <script>
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('active');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        const sections = document.querySelectorAll('header, section');
+        const navPills = document.querySelectorAll('.nav-pill');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= (sectionTop - 300)) current = section.getAttribute('id');
+            });
+            navPills.forEach(pill => {
+                pill.classList.remove('active');
+                if (pill.getAttribute('href').includes(current)) pill.classList.add('active');
+            });
+        });
+
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width; this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5; this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() { ctx.fillStyle = '#53a8b6'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+        }
+
+        function initParticles() {
+            particles = [];
+            const count = Math.floor(window.innerWidth / 15);
+            for (let i = 0; i < count; i++) particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach((p, i) => {
+                p.update(); p.draw();
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (dist < 100) {
+                        ctx.strokeStyle = `rgba(83, 168, 182, ${1 - dist/100})`;
+                        ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => { resize(); initParticles(); });
+        resize(); initParticles(); animate();
+    </script>
+</body>
+</html>
