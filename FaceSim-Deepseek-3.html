@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural Face Drafter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #007aff;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #636366;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 100px;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .canvas-container {
+            aspect-ratio: 1/1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #e5e5ea;
+            position: relative;
+        }
+
+        #faceCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls-panel {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            border: 1px solid #e5e5ea;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e5ea;
+        }
+
+        .control-group h3 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: #1d1d1f;
+        }
+
+        .slider-container {
+            margin-bottom: 16px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .slider-label span:first-child {
+            font-size: 0.95rem;
+            color: #424245;
+        }
+
+        .slider-value {
+            font-weight: 600;
+            color: #007aff;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #e5e5ea;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007aff;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e5ea;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .primary-btn {
+            background: #007aff;
+            color: white;
+        }
+
+        .secondary-btn {
+            background: #f2f2f7;
+            color: #1d1d1f;
+            border: 1px solid #d1d1d6;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            padding: 16px;
+            background: #f8f8fa;
+            border-radius: 8px;
+        }
+
+        .mic-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff3b30;
+        }
+
+        .mic-indicator.active {
+            background: #34c759;
+            box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.2);
+        }
+
+        select {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #d1d1d6;
+            background: white;
+            font-size: 1rem;
+            flex: 1;
+        }
+
+        @media (max-width: 800px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                position: sticky;
+                bottom: 20px;
+                background: white;
+                padding: 16px;
+                border-radius: 12px;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+                margin: 0 -24px -24px;
+            }
+            
+            .controls-panel {
+                max-height: none;
+                margin-bottom: 100px;
+            }
+        }
+
+        /* SVG Styles */
+        .face-outline {
+            fill: none;
+            stroke: #1d1d1f;
+            stroke-width: 3;
+        }
+
+        .eye {
+            fill: white;
+            stroke: #1d1d1f;
+            stroke-width: 2;
+        }
+
+        .pupil {
+            fill: #1d1d1f;
+        }
+
+        .nose {
+            fill: none;
+            stroke: #1d1d1f;
+            stroke-width: 2;
+        }
+
+        .mouth {
+            fill: #ff3b30;
+            stroke: #1d1d1f;
+            stroke-width: 2;
+        }
+
+        .mouth-cavity {
+            fill: #1d1d1f;
+        }
+
+        .teeth {
+            fill: white;
+            stroke: #d1d1d6;
+            stroke-width: 1;
+        }
+
+        .tongue {
+            fill: #ff6b6b;
+            stroke: #1d1d1f;
+            stroke-width: 1;
+        }
+
+        .ear {
+            fill: white;
+            stroke: #1d1d1f;
+            stroke-width: 3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Face Drafter</h1>
+            <p class="subtitle">Voice Edition — Generate unique character portraits</p>
+        </header>
+
+        <div class="main-content">
+            <div class="canvas-wrapper">
+                <div class="canvas-container">
+                    <svg id="faceCanvas" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <filter id="sketchFilter" x="-20%" y="-20%" width="140%" height="140%">
+                                <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise"/>
+                                <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+                            </filter>
+                        </defs>
+                        
+                        <!-- Face Outline -->
+                        <path id="faceOutline" class="face-outline"/>
+                        
+                        <!-- Ears -->
+                        <path id="leftEar" class="ear"/>
+                        <path id="rightEar" class="ear"/>
+                        
+                        <!-- Eyes -->
+                        <path id="leftEye" class="eye"/>
+                        <path id="rightEye" class="eye"/>
+                        <circle id="leftPupil" class="pupil"/>
+                        <circle id="rightPupil" class="pupil"/>
+                        
+                        <!-- Nose -->
+                        <path id="nose" class="nose"/>
+                        
+                        <!-- Mouth System -->
+                        <path id="mouthCavity" class="mouth-cavity"/>
+                        <path id="teeth" class="teeth"/>
+                        <path id="tongue" class="tongue"/>
+                        <path id="mouth" class="mouth"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>Face Shape</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Face Width</span>
+                            <span class="slider-value" id="faceWidthValue">200</span>
+                        </div>
+                        <input type="range" id="faceWidth" min="150" max="250" value="200" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Face Height</span>
+                            <span class="slider-value" id="faceHeightValue">300</span>
+                        </div>
+                        <input type="range" id="faceHeight" min="250" max="350" value="300" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Ear Size</span>
+                            <span class="slider-value" id="earSizeValue">25</span>
+                        </div>
+                        <input type="range" id="earSize" min="10" max="40" value="25" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Ear Position</span>
+                            <span class="slider-value" id="earPosValue">50</span>
+                        </div>
+                        <input type="range" id="earPos" min="30" max="70" value="50" step="1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Eyes</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Eye Spacing</span>
+                            <span class="slider-value" id="eyeSpacingValue">55</span>
+                        </div>
+                        <input type="range" id="eyeSpacing" min="40" max="70" value="55" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Eye Size</span>
+                            <span class="slider-value" id="eyeSizeValue">15</span>
+                        </div>
+                        <input type="range" id="eyeSize" min="8" max="25" value="15" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Eye Vertical Position</span>
+                            <span class="slider-value" id="eyeYValue">140</span>
+                        </div>
+                        <input type="range" id="eyeY" min="120" max="160" value="140" step="1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Mouth Position</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Mouth X Position</span>
+                            <span class="slider-value" id="mouthXValue">200</span>
+                        </div>
+                        <input type="range" id="mouthX" min="180" max="220" value="200" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Mouth Y Position</span>
+                            <span class="slider-value" id="mouthYValue">280</span>
+                        </div>
+                        <input type="range" id="mouthY" min="240" max="320" value="280" step="1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Mouth Shape</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Mouth Width</span>
+                            <span class="slider-value" id="mouthWidthValue">40</span>
+                        </div>
+                        <input type="range" id="mouthWidth" min="20" max="60" value="40" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Jaw Open</span>
+                            <span class="slider-value" id="jawOpenValue">10</span>
+                        </div>
+                        <input type="range" id="jawOpen" min="0" max="40" value="10" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Teeth Visibility</span>
+                            <span class="slider-value" id="teethPosValue">5</span>
+                        </div>
+                        <input type="range" id="teethPos" min="0" max="20" value="5" step="1">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Lip Fullness</span>
+                            <span class="slider-value" id="lipFullnessValue">50</span>
+                        </div>
+                        <input type="range" id="lipFullness" min="20" max="80" value="50" step="1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Style</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Line Quality</span>
+                            <span class="slider-value" id="lineQualityValue">4</span>
+                        </div>
+                        <input type="range" id="lineQuality" min="0" max="20" value="4" step="1">
+                    </div>
+                </div>
+
+                <div class="audio-controls">
+                    <div class="mic-indicator" id="micIndicator"></div>
+                    <button id="toggleMic" class="secondary-btn">Enable Microphone</button>
+                    <select id="visemeSelect">
+                        <option value="">Select Viseme...</option>
+                        <option value="A">A (Ah)</option>
+                        <option value="E">E (Eh)</option>
+                        <option value="O">O (Oh)</option>
+                        <option value="M">M (Mm)</option>
+                        <option value="S">S (Ss)</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="randomize" class="secondary-btn">Randomize</button>
+                    <button id="saveConfig" class="secondary-btn">Save Config</button>
+                    <button id="loadConfig" class="secondary-btn">Load Config</button>
+                    <button id="exportPNG" class="primary-btn">Export PNG</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class FaceApp {
+            constructor() {
+                this.state = {
+                    inputs: {},
+                    audio: {
+                        enabled: false,
+                        analyser: null,
+                        dataArray: null,
+                        smoothedVolume: 10
+                    }
+                };
+                
+                this.visemes = {
+                    'A': { jawOpen: 25, mouthWidth: 45, teethPos: 8, mouthY: 275 },
+                    'E': { jawOpen: 15, mouthWidth: 40, teethPos: 12, mouthY: 280 },
+                    'O': { jawOpen: 20, mouthWidth: 50, teethPos: 5, mouthY: 270 },
+                    'M': { jawOpen: 0, mouthWidth: 35, teethPos: 0, mouthY: 285 },
+                    'S': { jawOpen: 8, mouthWidth: 45, teethPos: 18, mouthY: 280 }
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.initInputs();
+                this.initEventListeners();
+                this.draw();
+            }
+            
+            initInputs() {
+                const inputs = [
+                    {id: 'faceWidth', min: 150, max: 250, value: 200},
+                    {id: 'faceHeight', min: 250, max: 350, value: 300},
+                    {id: 'earSize', min: 10, max: 40, value: 25},
+                    {id: 'earPos', min: 30, max: 70, value: 50},
+                    {id: 'eyeSpacing', min: 40, max: 70, value: 55},
+                    {id: 'eyeSize', min: 8, max: 25, value: 15},
+                    {id: 'eyeY', min: 120, max: 160, value: 140},
+                    {id: 'mouthX', min: 180, max: 220, value: 200},
+                    {id: 'mouthY', min: 240, max: 320, value: 280},
+                    {id: 'mouthWidth', min: 20, max: 60, value: 40},
+                    {id: 'jawOpen', min: 0, max: 40, value: 10},
+                    {id: 'teethPos', min: 0, max: 20, value: 5},
+                    {id: 'lipFullness', min: 20, max: 80, value: 50},
+                    {id: 'lineQuality', min: 0, max: 20, value: 4}
+                ];
+                
+                inputs.forEach(({id, min, max, value}) => {
+                    const input = document.getElementById(id);
+                    const display = document.getElementById(`${id}Value`);
+                    
+                    if (input && display) {
+                        // Set attributes
+                        input.min = min;
+                        input.max = max;
+                        input.value = value;
+                        
+                        this.state.inputs[id] = {
+                            element: input,
+                            display: display,
+                            value: parseFloat(value),
+                            min: min,
+                            max: max
+                        };
+                        
+                        // Initialize display
+                        display.textContent = Math.round(value);
+                        
+                        // Add event listener
+                        input.addEventListener('input', (e) => {
+                            const value = parseFloat(e.target.value);
+                            this.state.inputs[id].value = value;
+                            display.textContent = Math.round(value);
+                            this.draw();
+                        });
+                    }
+                });
+            }
+            
+            initEventListeners() {
+                // Microphone toggle
+                document.getElementById('toggleMic').addEventListener('click', () => {
+                    if (this.state.audio.enabled) {
+                        this.stopAudio();
+                    } else {
+                        this.startAudio();
+                    }
+                });
+                
+                // Viseme selection
+                document.getElementById('visemeSelect').addEventListener('change', (e) => {
+                    const viseme = e.target.value;
+                    if (viseme && this.visemes[viseme]) {
+                        this.applyViseme(viseme);
+                        e.target.value = '';
+                    }
+                });
+                
+                // Action buttons
+                document.getElementById('randomize').addEventListener('click', () => this.randomize());
+                document.getElementById('saveConfig').addEventListener('click', () => this.saveConfig());
+                document.getElementById('loadConfig').addEventListener('click', () => this.loadConfig());
+                document.getElementById('exportPNG').addEventListener('click', () => this.exportPNG());
+            }
+            
+            getValue(id) {
+                return this.state.inputs[id]?.value || 0;
+            }
+            
+            draw() {
+                const cx = 200; // Center X of canvas
+                
+                // Extract values
+                const faceWidth = this.getValue('faceWidth');
+                const faceHeight = this.getValue('faceHeight');
+                const earSize = this.getValue('earSize');
+                const earPos = this.getValue('earPos');
+                const eyeSpacing = this.getValue('eyeSpacing');
+                const eyeSize = this.getValue('eyeSize');
+                const eyeY = this.getValue('eyeY');
+                const mouthX = this.getValue('mouthX');
+                const mouthY = this.getValue('mouthY');
+                const mouthWidth = this.getValue('mouthWidth');
+                const jawOpen = this.getValue('jawOpen');
+                const teethPos = this.getValue('teethPos');
+                const lipFullness = this.getValue('lipFullness');
+                
+                // Update line quality filter
+                const lineQuality = this.getValue('lineQuality');
+                const filter = document.querySelector('#sketchFilter feDisplacementMap');
+                if (filter) {
+                    filter.setAttribute('scale', lineQuality);
+                }
+                
+                // ========== FACE OUTLINE ==========
+                const faceTop = 200 - faceHeight/2;
+                const faceBottom = 200 + faceHeight/2;
+                
+                // Create a single face outline path (elliptical shape)
+                const faceOutline = `M ${cx - faceWidth/2} ${faceTop + 50}
+                    C ${cx - faceWidth/2} ${faceTop + 20} ${cx - faceWidth/3} ${faceTop} ${cx} ${faceTop}
+                    C ${cx + faceWidth/3} ${faceTop} ${cx + faceWidth/2} ${faceTop + 20} ${cx + faceWidth/2} ${faceTop + 50}
+                    L ${cx + faceWidth/2} ${faceBottom - 50}
+                    C ${cx + faceWidth/2} ${faceBottom - 20} ${cx + faceWidth/3} ${faceBottom} ${cx} ${faceBottom}
+                    C ${cx - faceWidth/3} ${faceBottom} ${cx - faceWidth/2} ${faceBottom - 20} ${cx - faceWidth/2} ${faceBottom - 50}
+                    Z`;
+                
+                document.getElementById('faceOutline').setAttribute('d', faceOutline);
+                
+                // ========== EARS ==========
+                const earY = faceTop + earPos;
+                const leftEar = `M ${cx - faceWidth/2} ${earY}
+                    Q ${cx - faceWidth/2 - earSize} ${earY - earSize/2} ${cx - faceWidth/2} ${earY + earSize}
+                    Q ${cx - faceWidth/2 + earSize/2} ${earY + earSize/1.5} ${cx - faceWidth/2} ${earY}`;
+                document.getElementById('leftEar').setAttribute('d', leftEar);
+                
+                const rightEar = `M ${cx + faceWidth/2} ${earY}
+                    Q ${cx + faceWidth/2 + earSize} ${earY - earSize/2} ${cx + faceWidth/2} ${earY + earSize}
+                    Q ${cx + faceWidth/2 - earSize/2} ${earY + earSize/1.5} ${cx + faceWidth/2} ${earY}`;
+                document.getElementById('rightEar').setAttribute('d', rightEar);
+                
+                // ========== EYES ==========
+                const leftEye = `M ${cx - eyeSpacing - eyeSize} ${eyeY - eyeSize/2}
+                    Q ${cx - eyeSpacing} ${eyeY - eyeSize/2} ${cx - eyeSpacing + eyeSize} ${eyeY - eyeSize/2}
+                    Q ${cx - eyeSpacing + eyeSize} ${eyeY + eyeSize/2} ${cx - eyeSpacing - eyeSize} ${eyeY + eyeSize/2}
+                    Z`;
+                document.getElementById('leftEye').setAttribute('d', leftEye);
+                
+                const rightEye = `M ${cx + eyeSpacing - eyeSize} ${eyeY - eyeSize/2}
+                    Q ${cx + eyeSpacing} ${eyeY - eyeSize/2} ${cx + eyeSpacing + eyeSize} ${eyeY - eyeSize/2}
+                    Q ${cx + eyeSpacing + eyeSize} ${eyeY + eyeSize/2} ${cx + eyeSpacing - eyeSize} ${eyeY + eyeSize/2}
+                    Z`;
+                document.getElementById('rightEye').setAttribute('d', rightEye);
+                
+                // Pupils
+                document.getElementById('leftPupil').setAttribute('cx', cx - eyeSpacing);
+                document.getElementById('leftPupil').setAttribute('cy', eyeY);
+                document.getElementById('leftPupil').setAttribute('r', eyeSize * 0.3);
+                
+                document.getElementById('rightPupil').setAttribute('cx', cx + eyeSpacing);
+                document.getElementById('rightPupil').setAttribute('cy', eyeY);
+                document.getElementById('rightPupil').setAttribute('r', eyeSize * 0.3);
+                
+                // ========== NOSE ==========
+                // Position nose between eyes and mouth
+                const noseY = eyeY + (mouthY - eyeY) * 0.3;
+                const nose = `M ${cx - 8} ${noseY}
+                    Q ${cx} ${noseY + 20} ${cx + 8} ${noseY}
+                    Q ${cx + 4} ${noseY + 10} ${cx} ${noseY + 15}
+                    Q ${cx - 4} ${noseY + 10} ${cx - 8} ${noseY}`;
+                document.getElementById('nose').setAttribute('d', nose);
+                
+                // ========== MOUTH SYSTEM ==========
+                // Mouth center position (now controllable)
+                const mouthCenterY = mouthY + jawOpen;
+                const lipHeight = lipFullness * 0.3; // Scale lip fullness to appropriate size
+                
+                // Mouth cavity (black background)
+                const cavity = `M ${mouthX - mouthWidth/2} ${mouthCenterY - lipHeight/2}
+                    Q ${mouthX} ${mouthCenterY - lipHeight/4} ${mouthX + mouthWidth/2} ${mouthCenterY - lipHeight/2}
+                    L ${mouthX + mouthWidth/2} ${mouthCenterY + lipHeight/2 + teethPos}
+                    Q ${mouthX} ${mouthCenterY + lipHeight/2 + teethPos + 5} ${mouthX - mouthWidth/2} ${mouthCenterY + lipHeight/2 + teethPos}
+                    Z`;
+                document.getElementById('mouthCavity').setAttribute('d', cavity);
+                
+                // Teeth (only visible when teethPos > 0)
+                if (teethPos > 0) {
+                    const teeth = `M ${mouthX - mouthWidth/2 + 5} ${mouthCenterY + lipHeight/2}
+                        L ${mouthX + mouthWidth/2 - 5} ${mouthCenterY + lipHeight/2}
+                        L ${mouthX + mouthWidth/2 - 8} ${mouthCenterY + lipHeight/2 + teethPos}
+                        L ${mouthX - mouthWidth/2 + 8} ${mouthCenterY + lipHeight/2 + teethPos}
+                        Z`;
+                    document.getElementById('teeth').setAttribute('d', teeth);
+                    document.getElementById('teeth').style.display = 'block';
+                } else {
+                    document.getElementById('teeth').style.display = 'none';
+                }
+                
+                // Tongue (appears when jaw is open)
+                if (jawOpen > 15) {
+                    const tongue = `M ${mouthX - mouthWidth/4} ${mouthCenterY + lipHeight/2 + teethPos}
+                        Q ${mouthX} ${mouthCenterY + lipHeight/2 + teethPos + 15} ${mouthX + mouthWidth/4} ${mouthCenterY + lipHeight/2 + teethPos}`;
+                    document.getElementById('tongue').setAttribute('d', tongue);
+                    document.getElementById('tongue').style.display = 'block';
+                } else {
+                    document.getElementById('tongue').style.display = 'none';
+                }
+                
+                // Lips (red part)
+                const mouth = `M ${mouthX - mouthWidth/2} ${mouthCenterY - lipHeight/2}
+                    Q ${mouthX} ${mouthCenterY - lipHeight/4} ${mouthX + mouthWidth/2} ${mouthCenterY - lipHeight/2}
+                    L ${mouthX + mouthWidth/2} ${mouthCenterY + lipHeight/2}
+                    Q ${mouthX} ${mouthCenterY + lipHeight/2 + 2} ${mouthX - mouthWidth/2} ${mouthCenterY + lipHeight/2}
+                    Z`;
+                document.getElementById('mouth').setAttribute('d', mouth);
+            }
+            
+            // AUDIO FUNCTIONS
+            async startAudio() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    });
+                    
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const analyser = audioContext.createAnalyser();
+                    
+                    analyser.fftSize = 256;
+                    source.connect(analyser);
+                    
+                    this.state.audio.analyser = analyser;
+                    this.state.audio.dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    this.state.audio.enabled = true;
+                    
+                    // Update UI
+                    document.getElementById('micIndicator').classList.add('active');
+                    document.getElementById('toggleMic').textContent = 'Disable Mic';
+                    
+                    // Start animation loop
+                    this.audioLoop();
+                    
+                } catch (error) {
+                    console.error('Audio error:', error);
+                    alert('Could not access microphone. Please check permissions.');
+                }
+            }
+            
+            stopAudio() {
+                this.state.audio.enabled = false;
+                document.getElementById('micIndicator').classList.remove('active');
+                document.getElementById('toggleMic').textContent = 'Enable Mic';
+            }
+            
+            audioLoop() {
+                if (!this.state.audio.enabled) return;
+                
+                this.analyzeAudio();
+                this.draw();
+                
+                // Continue loop
+                requestAnimationFrame(() => this.audioLoop());
+            }
+            
+            analyzeAudio() {
+                if (!this.state.audio.analyser || !this.state.audio.enabled) return;
+                
+                const analyser = this.state.audio.analyser;
+                const dataArray = this.state.audio.dataArray;
+                analyser.getByteFrequencyData(dataArray);
+                
+                // Calculate volume (RMS)
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                const volume = sum / dataArray.length;
+                
+                // Smooth the value (exponential moving average)
+                this.state.audio.smoothedVolume = 
+                    this.state.audio.smoothedVolume * 0.8 + volume * 0.2;
+                
+                // Map to jaw open (0-40)
+                const jawOpen = Math.min(40, this.state.audio.smoothedVolume * 0.15);
+                
+                // Update jaw input
+                const jawInput = document.getElementById('jawOpen');
+                const jawDisplay = document.getElementById('jawOpenValue');
+                
+                if (jawInput && jawDisplay) {
+                    jawInput.value = jawOpen;
+                    jawDisplay.textContent = Math.round(jawOpen);
+                    this.state.inputs.jawOpen.value = jawOpen;
+                }
+            }
+            
+            applyViseme(visemeKey) {
+                const viseme = this.visemes[visemeKey];
+                if (!viseme) return;
+                
+                Object.keys(viseme).forEach(param => {
+                    const input = document.getElementById(param);
+                    const display = document.getElementById(`${param}Value`);
+                    
+                    if (input && display && this.state.inputs[param]) {
+                        const value = viseme[param];
+                        input.value = value;
+                        display.textContent = Math.round(value);
+                        this.state.inputs[param].value = value;
+                    }
+                });
+                
+                this.draw();
+            }
+            
+            randomize() {
+                Object.keys(this.state.inputs).forEach(id => {
+                    const input = this.state.inputs[id];
+                    const randomValue = input.min + Math.random() * (input.max - input.min);
+                    
+                    input.element.value = randomValue;
+                    input.display.textContent = Math.round(randomValue);
+                    input.value = randomValue;
+                });
+                
+                this.draw();
+            }
+            
+            saveConfig() {
+                const config = {};
+                Object.keys(this.state.inputs).forEach(id => {
+                    config[id] = this.state.inputs[id].value.toString();
+                });
+                
+                const jsonStr = JSON.stringify(config, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'face-config.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            loadConfig() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const config = JSON.parse(event.target.result);
+                            Object.keys(config).forEach(id => {
+                                if (this.state.inputs[id]) {
+                                    const value = parseFloat(config[id]);
+                                    this.state.inputs[id].element.value = value;
+                                    this.state.inputs[id].display.textContent = Math.round(value);
+                                    this.state.inputs[id].value = value;
+                                }
+                            });
+                            this.draw();
+                        } catch (error) {
+                            alert('Invalid configuration file');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                
+                input.click();
+            }
+            
+            exportPNG() {
+                const svgElement = document.getElementById('faceCanvas');
+                const svgData = new XMLSerializer().serializeToString(svgElement);
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = 800;
+                canvas.height = 800;
+                
+                const img = new Image();
+                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+                
+                img.onload = () => {
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const pngUrl = canvas.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    a.href = pngUrl;
+                    a.download = 'face-draft.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+                
+                img.src = url;
+            }
+        }
+
+        // Initialize app when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.faceApp = new FaceApp();
+            console.log('Face App initialized with mouth position controls');
+        });
+    </script>
+</body>
+</html>
