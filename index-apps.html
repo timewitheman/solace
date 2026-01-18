@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Solace — SPA</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#e7eefc;
+      --muted:#a8b4d1;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 16px 40px rgba(0,0,0,.40);
+      --radius:16px;
+      --green:#17c964;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(900px 500px at 20% 0%, rgba(80,120,255,.20), transparent 60%),
+                  radial-gradient(900px 500px at 90% 20%, rgba(40,220,170,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    header{
+      position:sticky; top:0;
+      backdrop-filter: blur(10px);
+      background: rgba(11,18,32,.65);
+      border-bottom:1px solid var(--border);
+      padding:14px 16px;
+      z-index:5;
+    }
+
+    .wrap{
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 14px 14px 40px;
+    }
+
+    .title{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .title h1{
+      font-size:16px; margin:0;
+      letter-spacing:.2px;
+    }
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--border);
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.04);
+    }
+
+    /* Narrow cards list */
+    .cards{
+      margin-top:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .card{
+      width:100%;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .08s ease;
+    }
+    .card:active{ transform: scale(.99); }
+
+    .left{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .emoji{
+      width:36px; height:36px;
+      display:grid; place-items:center;
+      border-radius: 12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .meta{
+      display:flex; flex-direction:column; gap:2px;
+      min-width:0;
+    }
+    .meta strong{
+      font-size:13px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .meta span{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .arrow{
+      color: var(--muted);
+      font-size: 18px;
+      margin-left:10px;
+      flex:0 0 auto;
+    }
+
+    /* FULLSCREEN VIEW */
+    .screen{
+      position:fixed;
+      inset:0;
+      z-index:999;
+      background:#000; /* behind iframe edges */
+      display:none;
+    }
+    .screen.show{ display:block; }
+
+    iframe{
+      width:100%;
+      height:100%;
+      border:0;
+      background:#fff;
+    }
+
+    /* Back circle button (green filled shaded) */
+    .backBtn{
+      position:fixed;
+      top:14px;
+      left:14px;
+      z-index:1000;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), transparent 45%),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.10)),
+        var(--green);
+      box-shadow: 0 14px 35px rgba(0,0,0,.55);
+      display:none;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .backBtn.show{ display:grid; place-items:center; }
+
+    .backBtn span{
+      font-size:20px;
+      color:#072012;
+      filter: drop-shadow(0 1px 0 rgba(255,255,255,.35));
+      font-weight:700;
+      line-height:1;
+    }
+
+    /* Hide list when viewing */
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <header id="topbar">
+    <div class="wrap title">
+      <h1>Solace</h1>
+      <div class="pill">Tap a card</div>
+    </div>
+  </header>
+
+  <main class="wrap" id="listScreen">
+    <section class="cards" id="cards"></section>
+  </main>
+
+  <!-- Fullscreen viewer -->
+  <div class="screen" id="viewerScreen">
+    <iframe id="frame" title="Page Viewer"></iframe>
+  </div>
+
+  <!-- Back button -->
+  <div class="backBtn" id="backBtn" aria-label="Back" title="Back">
+    <span>‹</span>
+  </div>
+
+  <script>
+    const PAGES = [
+      { emoji: "🧑‍🎨", title: "Face Generator 9", desc: "Face-Generator-9.html", href: "Face-Generator-9.html" },
+      { emoji: "🧠",   title: "FaceSim Deepseek 3", desc: "FaceSim-Deepseek-3.html", href: "FaceSim-Deepseek-3.html" },
+      { emoji: "✅",   title: "Taxer Checklist", desc: "taxer-checklister.html", href: "taxer-checklister.html" },
+      { emoji: "🧭",   title: "Taxer Next Steps", desc: "taxer-nextsteps.html", href: "taxer-nextsteps.html" },
+      { emoji: "🧾",   title: "Taxer Home", desc: "taxer.html", href: "taxer.html" },
+    ];
+
+    const cardsEl = document.getElementById("cards");
+    const listScreen = document.getElementById("listScreen");
+    const topbar = document.getElementById("topbar");
+
+    const viewerScreen = document.getElementById("viewerScreen");
+    const frame = document.getElementById("frame");
+    const backBtn = document.getElementById("backBtn");
+
+    function renderCards(){
+      cardsEl.innerHTML = "";
+      PAGES.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.setAttribute("role", "button");
+        card.tabIndex = 0;
+        card.innerHTML = `
+          <div class="left">
+            <div class="emoji">${p.emoji}</div>
+            <div class="meta">
+              <strong>${p.title}</strong>
+              <span>${p.desc}</span>
+            </div>
+          </div>
+          <div class="arrow">›</div>
+        `;
+        card.addEventListener("click", () => openPage(p.href));
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") openPage(p.href);
+        });
+        cardsEl.appendChild(card);
+      });
+    }
+
+    function openPage(href){
+      // hash for back/forward
+      location.hash = encodeURIComponent(href);
+
+      // show fullscreen iframe
+      frame.src = href;
+      viewerScreen.classList.add("show");
+      backBtn.classList.add("show");
+
+      // hide list UI
+      listScreen.classList.add("hidden");
+      topbar.classList.add("hidden");
+      document.body.style.background = "#000";
+    }
+
+    function closePage(){
+      frame.src = "";
+      viewerScreen.classList.remove("show");
+      backBtn.classList.remove("show");
+
+      listScreen.classList.remove("hidden");
+      topbar.classList.remove("hidden");
+      document.body.style.background = "";
+
+      // clear hash without adding another history entry
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+
+    backBtn.addEventListener("click", closePage);
+
+    // If user uses phone back button, sync with hash
+    function syncFromHash(){
+      const h = decodeURIComponent((location.hash || "").replace(/^#/, ""));
+      if (!h){
+        // no hash -> list
+        if (viewerScreen.classList.contains("show")) closePage();
+        return;
+      }
+      openPage(h);
+    }
+
+    window.addEventListener("hashchange", syncFromHash);
+
+    renderCards();
+    // open if a hash is already present
+    if (location.hash) syncFromHash();
+  </script>
+</body>
+</html>
