@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nigerian Tax For Citizens — 2026 Ready</title>
+  <meta name="description" content="A smooth guide to Nigerian taxes for citizens (Re-themed)." />
+  <style>
+    :root{
+      /* Theme 2: Light Mode + Purple/Yellow Accents */
+      --bg: #f3f4f6;          /* Light gray page bg */
+      --header-bg: #0f172a;   /* Dark navy header */
+      --text-main: #1f2937;   /* Dark gray text */
+      --text-muted: #6b7280;  /* Muted gray */
+      --card-light: #ffffff;  /* White cards */
+      
+      /* Accents from Image 2 */
+      --brand-yellow: #facc15; 
+      --brand-purple: #8b5cf6;
+      --brand-dark: #0f172a;  /* Matches "VAT Reform" card */
+      
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --radius: 16px;
+      --max: 1050px;
+      --headerH: 130px; /* Accounts for nav + yellow banner */
+      --chipsPerView: 6;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      overflow-x:hidden;
+    }
+
+    /* --- Header & Banner --- */
+    .top-stack{
+      position:sticky; top:0; z-index:50;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    /* 1. Main Dark Navbar */
+    .topbar{
+      background: var(--header-bg);
+      color: #fff;
+      padding: 12px 0;
+    }
+    .topbar-inner{
+      max-width:var(--max); margin:0 auto; padding:0 18px;
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    }
+    
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      flex: 0 0 auto;
+    }
+    /* Logo styling to match yellow square in image */
+    .logo-box{
+      width:36px; height:36px;
+      background: var(--brand-yellow);
+      border-radius: 8px;
+      display:grid; place-items:center;
+      color: #000;
+      font-weight:900; font-size:18px;
+    }
+    .brand h1{
+      margin:0; font-size:18px; font-weight:700; color:#fff;
+    }
+    .brand .sub{
+      display:block; font-size:11px; color: #9ca3af; font-weight:400;
+    }
+
+    /* 2. Yellow Alert Banner */
+    .alert-banner{
+      background: var(--brand-yellow);
+      color: #000;
+      font-weight: 600;
+      font-size: 13px;
+      text-align:center;
+      padding: 8px 18px;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .alert-icon{ font-size:16px; opacity:0.8; }
+
+    /* --- Navigation --- */
+    /* Integrated into a white strip below banner or part of the page flow? 
+       Let's keep it sticky inside the top-stack for utility. */
+    .nav-strip{
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 8px 0;
+    }
+    .navwrap{
+      max-width: var(--max); margin:0 auto; padding:0 18px;
+      display:flex; align-items:center; gap:10px;
+    }
+    
+    .nav{
+      flex: 1 1 auto;
+      display:flex; gap:8px;
+      overflow-x:auto; scroll-snap-type: x mandatory;
+      padding-bottom:4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .nav::-webkit-scrollbar{height:0px; width:0px;}
+
+    .chip{
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: var(--text-main);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px; font-weight: 600;
+      cursor:pointer; white-space:nowrap;
+      scroll-snap-align: start;
+      transition: all .2s ease;
+      display:flex; align-items:center; gap:6px;
+    }
+    .chip:hover{ background: #f3f4f6; border-color:#d1d5db; }
+    .chip.active{
+      background: var(--brand-purple);
+      color: #fff;
+      border-color: var(--brand-purple);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+    .chip .dot{ display:none; } /* Remove dot for this theme */
+
+    .navbtn{
+      background: #f3f4f6; border:none; color: var(--text-main);
+      width:32px; height:32px; border-radius:50%;
+      cursor:pointer; display:grid; place-items:center; font-size:14px;
+    }
+    .navbtn:hover{ background: #e5e7eb; }
+
+    /* --- Main Layout --- */
+    .wrap{max-width:var(--max); margin:0 auto; padding: 24px 18px 80px;}
+
+    /* Hero Section - The "Dark Card" Look */
+    .hero{ padding-bottom: 24px; }
+    .hero-card{
+      background: var(--brand-dark); /* Matches "VAT Reform" card */
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      position:relative; overflow:hidden;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+    }
+    /* Purple glow effect */
+    .hero-card::after{
+      content:""; position:absolute; top:-50%; right:-10%;
+      width:300px; height:300px;
+      background: radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%);
+      filter: blur(40px); pointer-events:none;
+    }
+    
+    .hero-content h2{ font-size:28px; margin:0 0 12px; line-height:1.2; }
+    .hero-content p{ color: #cbd5e1; max-width:600px; margin-bottom:20px; line-height:1.5; }
+    .hero-btn{
+      background: rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+      color:#fff; padding: 10px 20px; border-radius:8px; font-size:13px; font-weight:600;
+      cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    }
+    .hero-btn:hover{ background: rgba(255,255,255,0.2); }
+
+    /* Section Cards - The "Light Card" Look */
+    section{ scroll-margin-top: 180px; margin-bottom: 20px; }
+    
+    .card{
+      background: var(--card-light);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      border: 1px solid #f1f5f9;
+      transition: transform .2s;
+    }
+    
+    .card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:16px; }
+    .icon-box{
+      width:42px; height:42px;
+      background: #f3e8ff; /* Light purple bg */
+      color: var(--brand-purple);
+      border-radius: 10px;
+      display:grid; place-items:center; font-size:20px;
+      flex-shrink:0;
+    }
+    
+    .card h2{ margin:0; font-size:17px; font-weight:700; color: #111827; }
+    .card p{ margin:4px 0 0; font-size:13px; color: var(--text-muted); line-height:1.5; }
+    
+    .badge{
+      background: #fffbeb; color: #b45309; /* Yellow tint */
+      font-size:11px; font-weight:700; padding:4px 8px; border-radius:6px;
+      border:1px solid #fde68a; white-space:nowrap;
+    }
+
+    /* Grid for details */
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width: 600px){ .grid{ grid-template-columns: 1fr; } }
+
+    .box{
+      background: #f9fafb; border: 1px solid #e5e7eb;
+      border-radius: 12px; padding: 14px;
+    }
+    .box h3{ margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color: var(--text-muted); }
+    .box ul{ margin:0; padding-left:16px; font-size:13px; color: #374151; }
+    .box li{ margin-bottom:6px; }
+
+    /* Footer / Bottom */
+    .footer-actions{ margin-top:16px; display:flex; gap:10px; }
+    .btn-action{
+      background: var(--brand-purple); color: #fff;
+      border:none; padding:10px 16px; border-radius:8px;
+      font-size:13px; font-weight:600; cursor:pointer;
+      flex:1; display:flex; justify-content:center; align-items:center; gap:8px;
+      transition: background .2s;
+    }
+    .btn-action:hover{ background: #7c3aed; }
+    .btn-ghost{
+      background: transparent; color: var(--text-muted);
+      border:1px solid #e5e7eb;
+    }
+    .btn-ghost:hover{ border-color: #d1d5db; color: #111827; }
+
+    @media (max-width: 720px){
+      :root{ --chipsPerView: 3; }
+      .brand h1{ font-size:16px; }
+      .top-stack{position: sticky;}
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="top-stack" id="headerStack">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="logo-box">✓</div>
+          <div>
+            <h1>Taxer. <span style="opacity:0.6; font-weight:400;">by Citizenolu</span></h1>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="alert-banner">
+      <span class="alert-icon">🏛️</span>
+      <span>FIRS is now NIRS (Nigeria Revenue Service)</span>
+    </div>
+
+    <div class="nav-strip">
+      <div class="navwrap">
+        <button class="navbtn" id="navPrev">‹</button>
+        <nav class="nav" id="nav"></nav>
+        <button class="navbtn" id="navNext">›</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    
+    <div class="hero">
+      <div class="hero-card">
+        <div class="hero-content">
+          <div style="color:var(--brand-yellow); font-weight:700; font-size:12px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <span style="font-size:14px">🛡️</span> CITIZEN GUIDE
+          </div>
+          <h2>Nigerian Tax Checklist</h2>
+          <p>
+            Avoid surprises in 2026. A 10-step guide for salary earners, freelancers, and side-hustlers.
+            Clear, compliant, and simple.
+          </p>
+          <button class="hero-btn" onclick="document.getElementById('s1').scrollIntoView()">
+            Start Checklist <span>→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <section id="s1" data-title="Basics" data-icon="🧠">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">🧠</div>
+            <div>
+              <h2>1) Tax Basics</h2>
+              <p>Salary vs. Multi-Income status.</p>
+            </div>
+          </div>
+          <div class="badge">Start Here</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Salary Only</h3>
+            <ul>
+              <li>Employer deducts PAYE</li>
+              <li>No side gigs</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Multi-Income</h3>
+            <ul>
+              <li>Salary + Freelance</li>
+              <li>Rent, Sales, content money</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s2" data-title="ID & TIN" data-icon="🪪">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">🪪</div>
+            <div>
+              <h2>2) Registration</h2>
+              <p>TIN and State Residence validation.</p>
+            </div>
+          </div>
+          <div class="badge">Essential</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Checklist</h3>
+            <ul>
+              <li>Valid JTB TIN</li>
+              <li>Correct State of Residence</li>
+              <li>Update if you move</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s3" data-title="PAYE" data-icon="💼">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">💼</div>
+            <div>
+              <h2>3) PAYE Remittance</h2>
+              <p>Don't just trust the payslip.</p>
+            </div>
+          </div>
+        </div>
+        <div class="box">
+          <p style="margin-top:0;"><strong>The Risk:</strong> Employer deducts money but fails to remit to the state. <strong>The Fix:</strong> Ask for your Annual Tax Certificate or proof of remittance every January.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="s4" data-title="Taxable?" data-icon="🧾">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">🧾</div>
+            <div>
+              <h2>4) What's Taxable?</h2>
+              <p>Common traps to avoid.</p>
+            </div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Yes (Taxable)</h3>
+            <ul>
+              <li>Basic Salary & Bonuses</li>
+              <li> Allowances & Commissions</li>
+              <li>Profit from side sales</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Usually Exempt</h3>
+            <ul>
+              <li>NHF Contributions</li>
+              <li>Pension (RSA)</li>
+              <li>Life Insurance Premium</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s5" data-title="Side Biz" data-icon="🚀">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">🚀</div>
+            <div>
+              <h2>5) Side Hustles</h2>
+              <p>Treat it like a real business.</p>
+            </div>
+          </div>
+          <div class="badge">Growth</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Discipline</h3>
+            <ul>
+              <li>Separate Bank Account</li>
+              <li>Keep Invoices (Digital is fine)</li>
+              <li>Track Expenses</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s6" data-title="Records" data-icon="📂">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">📂</div>
+            <div>
+              <h2>6) Record Keeping</h2>
+              <p>Your defense against audits.</p>
+            </div>
+          </div>
+        </div>
+        <div class="box">
+          <ul>
+            <li>Save Payslips (PDFs)</li>
+            <li>Bank Statements (Yearly export)</li>
+            <li>Withholding Tax credit notes</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="s7" data-title="Filing" data-icon="🗓️">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">🗓️</div>
+            <div>
+              <h2>7) Deadlines</h2>
+              <p>When to act.</p>
+            </div>
+          </div>
+          <div class="badge">Critical</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>PAYE</h3>
+            <ul>
+              <li>Employer files monthly</li>
+              <li>Jan 31: Employer Annual Return</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Direct Assessment</h3>
+            <ul>
+              <li>Mar 31: Individual Return (Form A)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s8" data-title="Red Flags" data-icon="🚩">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box">🚩</div>
+            <div>
+              <h2>8) Red Flags</h2>
+              <p>Don't trigger an audit.</p>
+            </div>
+          </div>
+        </div>
+        <div class="box">
+          <ul>
+            <li>Huge lifestyle spending vs. tiny declared income.</li>
+            <li>Receiving business income in personal savings accounts.</li>
+            <li>Conflicting data between bank and tax filings.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="s9" data-title="Self-Check" data-icon="✅">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box" style="background:#ecfccb; color:#4d7c0f;">✅</div>
+            <div>
+              <h2>9) The Annual Self-Check</h2>
+              <p>15 minutes, once a year.</p>
+            </div>
+          </div>
+        </div>
+        <div class="box">
+          <ol style="margin:0; padding-left:16px; font-size:13px; color:#374151;">
+            <li style="margin-bottom:6px">Do my bank inflows match my explanation?</li>
+            <li style="margin-bottom:6px">Do I have proof my tax was remitted?</li>
+            <li style="margin-bottom:6px">Is my Tax Clearance Certificate valid?</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="s10" data-title="Action Plan" data-icon="⚡">
+      <div class="card" style="border-color: var(--brand-purple);">
+        <div class="card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="icon-box" style="background:var(--brand-purple); color:#fff;">⚡</div>
+            <div>
+              <h2>10) 30-Day Plan</h2>
+              <p>Get compliant now.</p>
+            </div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Week 1</h3>
+            <p style="font-size:13px; margin:0;">Gather documents. Confirm TIN.</p>
+          </div>
+          <div class="box">
+            <h3>Week 2</h3>
+            <p style="font-size:13px; margin:0;">Setup "Side Hustle" folder & bank account.</p>
+          </div>
+        </div>
+        <div class="footer-actions">
+          <button class="btn-action" onclick="window.scrollTo({top:0, behavior:'smooth'})">⬆ Back to Top</button>
+          <button class="btn-action btn-ghost" onclick="alert('Link copied!')">🔗 Share</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Simple Nav Logic
+    const nav = document.getElementById('nav');
+    const sections = document.querySelectorAll('section');
+    const header = document.getElementById('headerStack');
+    const chips = [];
+
+    // Populate Nav
+    sections.forEach(sec => {
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.innerHTML = `${sec.dataset.icon} ${sec.dataset.title}`;
+      btn.onclick = () => {
+        const offset = header.offsetHeight + 10;
+        const top = sec.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({top, behavior: 'smooth'});
+      };
+      nav.appendChild(btn);
+      chips.push({ id: sec.id, btn });
+    });
+
+    // Scroll Spy
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if(e.isIntersecting){
+          chips.forEach(c => {
+            c.btn.classList.toggle('active', c.id === e.target.id);
+            if(c.id === e.target.id){
+              c.btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+          });
+        }
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    sections.forEach(s => observer.observe(s));
+
+    // Arrows
+    document.getElementById('navPrev').onclick = () => nav.scrollBy({left: -200, behavior: 'smooth'});
+    document.getElementById('navNext').onclick = () => nav.scrollBy({left: 200, behavior: 'smooth'});
+  </script>
+</body>
+</html>
