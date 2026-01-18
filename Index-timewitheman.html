@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Solace — Mini SPA</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1b33;
+      --card2:#0e1730;
+      --text:#e7eefc;
+      --muted:#a8b4d1;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(900px 500px at 20% 0%, rgba(80,120,255,.20), transparent 60%),
+                  radial-gradient(900px 500px at 90% 20%, rgba(40,220,170,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      position:sticky; top:0;
+      backdrop-filter: blur(10px);
+      background: rgba(11,18,32,.65);
+      border-bottom:1px solid var(--border);
+      padding:14px 16px;
+      z-index:10;
+    }
+
+    .wrap{
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 14px 14px 90px;
+    }
+
+    .title{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .title h1{
+      font-size:16px; margin:0;
+      letter-spacing:.2px;
+    }
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--border);
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.04);
+    }
+
+    /* NARROW CARDS */
+    .cards{
+      margin-top:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .card{
+      width: 100%;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .08s ease, border-color .2s ease, background .2s ease;
+    }
+    .card:active{ transform: scale(.99); }
+    .left{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .emoji{
+      width:36px; height:36px;
+      display:grid; place-items:center;
+      border-radius: 12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .meta{
+      display:flex; flex-direction:column; gap:2px;
+      min-width:0;
+    }
+    .meta strong{
+      font-size:13px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .meta span{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .arrow{
+      color: var(--muted);
+      font-size: 18px;
+      margin-left:10px;
+      flex:0 0 auto;
+    }
+
+    /* VIEWER */
+    .viewer{
+      margin-top: 14px;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      overflow:hidden;
+      background: rgba(0,0,0,.18);
+      box-shadow: var(--shadow);
+      display:none;
+    }
+    .viewerTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 10px;
+      border-bottom:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+    }
+    .viewerTop .now{
+      display:flex; align-items:center; gap:8px;
+      min-width:0;
+    }
+    .viewerTop .now .label{
+      font-size:12px; color:var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .btn:active{ transform: scale(.99); }
+
+    iframe{
+      width:100%;
+      height: 70vh;
+      border:0;
+      background:#fff;
+    }
+
+    footerHint{
+      display:block;
+      margin-top: 14px;
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.45;
+    }
+    code{ color:#cfe0ff; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap title">
+      <h1>Solace</h1>
+      <div class="pill">Single-page launcher</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="cards" id="cards"></section>
+
+    <section class="viewer" id="viewer">
+      <div class="viewerTop">
+        <div class="now">
+          <div class="emoji" id="viewerEmoji">🔗</div>
+          <div class="label" id="viewerLabel">Open</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn" id="openNew">Open in new tab</button>
+          <button class="btn" id="closeViewer">Close</button>
+        </div>
+      </div>
+      <iframe id="frame" title="Page Viewer"></iframe>
+    </section>
+
+    <footerHint>
+      Tip: this loads pages inside the app using an <code>iframe</code> (SPA feel).  
+      If you want full navigation to each page instead, tell me and I’ll swap links to normal <code>&lt;a href&gt;</code>.
+    </footerHint>
+  </main>
+
+  <script>
+    // Add / edit your pages here
+    const PAGES = [
+      { emoji: "🧑‍🎨", title: "Face Generator 9", desc: "Face-Generator-9.html", href: "Face-Generator-9.html" },
+      { emoji: "🧠",   title: "FaceSim Deepseek 3", desc: "FaceSim-Deepseek-3.html", href: "FaceSim-Deepseek-3.html" },
+      { emoji: "✅",   title: "Taxer Checklist", desc: "taxer-checklister.html", href: "taxer-checklister.html" },
+      { emoji: "🧭",   title: "Taxer Next Steps", desc: "taxer-nextsteps.html", href: "taxer-nextsteps.html" },
+      { emoji: "🧾",   title: "Taxer Home", desc: "taxer.html", href: "taxer.html" },
+    ];
+
+    const cardsEl = document.getElementById("cards");
+    const viewer = document.getElementById("viewer");
+    const frame = document.getElementById("frame");
+    const viewerLabel = document.getElementById("viewerLabel");
+    const viewerEmoji = document.getElementById("viewerEmoji");
+    const closeViewer = document.getElementById("closeViewer");
+    const openNew = document.getElementById("openNew");
+
+    function renderCards(){
+      cardsEl.innerHTML = "";
+      PAGES.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.setAttribute("role", "button");
+        card.tabIndex = 0;
+        card.innerHTML = `
+          <div class="left">
+            <div class="emoji">${p.emoji}</div>
+            <div class="meta">
+              <strong>${p.title}</strong>
+              <span>${p.desc}</span>
+            </div>
+          </div>
+          <div class="arrow">›</div>
+        `;
+        card.addEventListener("click", () => openPage(p.href, p.title, p.emoji));
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") openPage(p.href, p.title, p.emoji);
+        });
+        cardsEl.appendChild(card);
+      });
+    }
+
+    function openPage(href, title, emoji){
+      // Update SPA state (hash) so back/forward works
+      location.hash = encodeURIComponent(href);
+
+      viewer.style.display = "block";
+      viewerLabel.textContent = title + " — " + href;
+      viewerEmoji.textContent = emoji || "🔗";
+      frame.src = href;
+
+      openNew.onclick = () => window.open(href, "_blank");
+    }
+
+    function closePage(){
+      frame.src = "";
+      viewer.style.display = "none";
+      viewerLabel.textContent = "Open";
+      viewerEmoji.textContent = "🔗";
+      // Clear hash without adding extra history entry
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+
+    closeViewer.addEventListener("click", closePage);
+
+    // Handle direct hash navigation
+    function syncFromHash(){
+      const h = decodeURIComponent((location.hash || "").replace(/^#/, ""));
+      if (!h) return;
+      const found = PAGES.find(p => p.href === h);
+      if (found) openPage(found.href, found.title, found.emoji);
+      else openPage(h, h, "🔗");
+    }
+
+    window.addEventListener("hashchange", syncFromHash);
+
+    renderCards();
+    syncFromHash();
+  </script>
+</body>
+</html>
