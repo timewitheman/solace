@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nigerian Tax For Citizens — SPA</title>
+  <meta name="description" content="A smooth, pseudo-animated single-page guide to Nigerian taxes for citizens." />
+  <style>
+    :root{
+      --bg:#07110c;
+      --text:#e8fff1;
+      --muted:#a8d9bf;
+      --accent:#1db954;
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --radius: 18px;
+      --max: 1050px;
+
+      /* JS keeps this synced to sticky header height */
+      --headerH: 92px;
+
+      /* ✅ nav "page size" (chips per view) */
+      --chipsPerView: 6; /* desktop default */
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 800px at 15% 5%, rgba(29,185,84,.20), transparent 60%),
+        radial-gradient(900px 700px at 85% 10%, rgba(255,255,255,.10), transparent 55%),
+        radial-gradient(1000px 700px at 60% 90%, rgba(29,185,84,.14), transparent 60%),
+        linear-gradient(180deg, #050c08 0%, var(--bg) 35%, #050c08 100%);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    /* subtle animated grain */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+      mix-blend-mode:overlay;
+      opacity:.12;
+      pointer-events:none;
+      animation: drift 10s linear infinite;
+      transform: translateZ(0);
+    }
+    @keyframes drift{
+      0%{transform:translate3d(0,0,0)}
+      100%{transform:translate3d(-120px,80px,0)}
+    }
+
+    .wrap{max-width:var(--max); margin:0 auto; padding:28px 18px 90px}
+
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background: rgba(5,12,8,.62);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .topbar-inner{
+      max-width:var(--max);
+      margin:0 auto;
+      padding:14px 18px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    /* Logo */
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      min-width: 240px;
+      flex: 0 0 auto;
+    }
+    .logo{
+      width:42px; height:42px;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+      animation: floaty 3.8s ease-in-out infinite;
+    }
+    @keyframes floaty{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-3px)}
+    }
+    .brand h1{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.3px;
+      line-height:1.2;
+    }
+    .brand .sub{
+      display:block;
+      color:var(--muted);
+      font-weight:500;
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    /* Nav & arrow controls wrapper */
+    .navwrap{
+      flex: 1 1 520px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
+      padding:4px 2px;
+    }
+
+    /* ✅ Use slider system by default (desktop + landscape too) */
+    .nav{
+      flex: 1 1 auto;
+      display:flex;
+      gap:8px;
+      flex-wrap:nowrap;              /* ✅ no wrapping */
+      overflow-x:auto;               /* ✅ slider */
+      overflow-y:hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory; /* ✅ snap */
+      padding: 0 2px;
+      min-width:0;
+    }
+    .nav::-webkit-scrollbar{height:8px}
+    .nav::-webkit-scrollbar-thumb{background: rgba(255,255,255,.12); border-radius:999px}
+    .nav::-webkit-scrollbar-track{background: transparent}
+
+    .chip{
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(13,28,20,.7), rgba(11,23,17,.65));
+      color:var(--text);
+      border-radius:999px;
+      padding:10px 12px;
+      display:inline-flex; align-items:center; gap:8px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+      transition: transform .12s ease, border-color .12s ease, background .2s ease;
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+      scroll-snap-align: start;
+      flex: 0 0 calc((100% - (8px * (var(--chipsPerView) - 1))) / var(--chipsPerView)); /* ✅ X per view */
+      justify-content:center;
+    }
+    .chip:hover{transform:translateY(-1px); border-color: rgba(29,185,84,.35)}
+    .chip:active{transform:translateY(0px) scale(.99)}
+    .chip .dot{
+      width:8px; height:8px; border-radius:50%;
+      background:rgba(29,185,84,.85);
+      box-shadow:0 0 0 4px rgba(29,185,84,.12);
+    }
+    .chip.active{
+      border-color: rgba(29,185,84,.55);
+      background: linear-gradient(180deg, rgba(29,185,84,.18), rgba(13,28,20,.75));
+    }
+
+    /* Header buttons */
+    .btn{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      transition: transform .12s ease, border-color .12s ease, background .2s ease;
+      display:inline-flex; gap:8px; align-items:center;
+      justify-content:center;
+      white-space:nowrap;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(29,185,84,.35)}
+    .btn:active{transform: translateY(0px) scale(.99)}
+
+    #backToTop{flex:0 0 auto}
+
+    /* Arrow buttons (✅ shown on all sizes now) */
+    .navbtn{
+      display:inline-flex;
+      width:40px;
+      height:40px;
+      padding:0;
+      border-radius: 14px;
+      font-size:18px;
+      line-height:1;
+      flex: 0 0 auto;
+    }
+
+    /* ✅ Portrait: 3 per view */
+    @media (max-width: 720px){
+      :root{ --chipsPerView: 3; }     /* ✅ 3 per view in portrait */
+      .brand{width:100%;}
+      #backToTop{width:100%; justify-content:center}
+      .navwrap{
+        width:100%;
+        flex: 1 1 100%;
+        gap:8px;
+        padding: 8px 0 10px;
+        border-top: 1px solid rgba(255,255,255,.06);
+        border-bottom: 1px solid rgba(255,255,255,.06);
+      }
+    }
+
+    /* ✅ Landscape mode: 4 per view */
+    @media (max-height: 520px) and (orientation: landscape){
+      :root{ --chipsPerView: 4; }     /* ✅ 4 per view in landscape */
+    }
+
+    /* Hero */
+    .hero{padding:26px 0 12px}
+    .hero-card{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(13,28,20,.74), rgba(11,23,17,.66));
+      box-shadow: var(--shadow);
+      padding:22px 18px;
+      overflow:hidden;
+      position:relative;
+    }
+    .hero-card::after{
+      content:"";
+      position:absolute; inset:-40%;
+      background:
+        conic-gradient(from 200deg, rgba(29,185,84,.0), rgba(29,185,84,.22), rgba(255,255,255,.10), rgba(29,185,84,.0));
+      animation: spin 10s linear infinite;
+      filter: blur(22px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hero-content{position:relative; z-index:2; display:grid; gap:12px}
+    .kicker{
+      display:inline-flex; align-items:center; gap:10px;
+      font-size:12px; color:var(--muted);
+      background: rgba(29,185,84,.08);
+      border:1px solid rgba(29,185,84,.18);
+      padding:8px 10px;
+      border-radius:999px;
+      width:fit-content;
+    }
+    .title{margin:0; font-size:28px; letter-spacing:.2px; line-height:1.15}
+    .lead{margin:0; color:#d8f7e5; max-width: 70ch; line-height:1.55}
+    .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top: 4px}
+    .pill{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color: var(--muted);
+      display:inline-flex; align-items:center; gap:8px;
+    }
+
+    /* section top never hides under header */
+    section{
+      scroll-margin-top: calc(var(--headerH) + 14px);
+      margin-top: 16px;
+      animation: fadeUp .6s ease both;
+    }
+    @keyframes fadeUp{
+      from{opacity:0; transform:translateY(10px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+
+    .card{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(13,28,20,.72), rgba(11,23,17,.64));
+      box-shadow: var(--shadow);
+      padding:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(500px 200px at 10% 0%, rgba(29,185,84,.10), transparent 60%);
+      pointer-events:none;
+    }
+
+    .card-head{
+      position:relative;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .hgroup{
+      display:flex; align-items:flex-start; gap:12px;
+      min-width:0;
+    }
+    .hgroup > div{min-width:0}
+    .icon{
+      width:44px; height:44px;
+      border-radius:14px;
+      background: rgba(29,185,84,.12);
+      border:1px solid rgba(29,185,84,.20);
+      display:grid; place-items:center;
+      font-size:22px;
+      box-shadow:0 14px 30px rgba(0,0,0,.20);
+      flex:0 0 auto;
+    }
+    .card h2, .card p{word-break: normal; overflow-wrap: break-word}
+    .card h2{margin:0; font-size:18px; line-height:1.25}
+    .card p{margin:10px 0 0; color:#d8f7e5; line-height:1.6}
+
+    /* Mobile: stack header so badge can't crush text */
+    @media (max-width: 720px){
+      .card-head{flex-direction:column; gap:10px}
+      .badge{align-self:flex-start}
+      .hgroup{width:100%}
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:12px;
+      margin-top: 12px;
+      position:relative;
+    }
+    .box{
+      grid-column: span 6;
+      border:1px solid rgba(255,255,255,.09);
+      background: rgba(0,0,0,.16);
+      border-radius: 14px;
+      padding:12px;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .box:hover{transform: translateY(-1px); border-color: rgba(29,185,84,.30)}
+    .box h3{margin:0; font-size:13px; color:var(--muted); letter-spacing:.2px}
+    .box ul{margin:8px 0 0; padding-left:18px; color:var(--text); line-height:1.6}
+    .box li{margin:6px 0}
+
+    .tagrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .tag{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      padding:6px 10px;
+      border-radius:999px;
+    }
+    .badge{
+      font-size:12px;
+      color:#0a130d;
+      background: linear-gradient(180deg, rgba(29,185,84,.95), rgba(29,185,84,.70));
+      padding:7px 10px;
+      border-radius:999px;
+      font-weight:700;
+      box-shadow:0 18px 34px rgba(29,185,84,.18);
+      border:1px solid rgba(255,255,255,.10);
+      white-space:nowrap;
+      position:relative;
+      z-index:1;
+    }
+
+    .footer{
+      margin-top:18px;
+      display:flex; gap:10px; flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+      color:var(--muted);
+      font-size:12px;
+      opacity:.95;
+    }
+
+    @media (max-width: 860px){
+      .title{font-size:24px}
+      .box{grid-column: span 12}
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      html{scroll-behavior:auto}
+      body::before,.logo,.hero-card::after{animation:none}
+      section{animation:none}
+      .chip,.box,.btn{transition:none}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <div class="brand" title="Nigerian Tax For Citizens">
+        <svg class="logo" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1db954"/>
+              <stop offset="1" stop-color="#0e7a39"/>
+            </linearGradient>
+          </defs>
+        <path d="M32 4c10 8 20 10 20 10v18c0 18-10.5 26.5-20 28-9.5-1.5-20-10-20-28V14S22 12 32 4Z"
+              fill="url(#g)" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/>
+        <path d="M22 16h20v32H22z" fill="rgba(255,255,255,.10)" />
+        <path d="M24 44V20h4l12 18V20h4v24h-4L28 26v18h-4Z" fill="#ffffff" opacity=".92"/>
+        <path d="M12 20h40" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
+        </svg>
+        <div>
+          <h1>Nigerian Tax For Citizens <span class="sub">A smooth, practical guide (2026-ready)</span></h1>
+        </div>
+      </div>
+
+      <!-- ✅ Nav + arrows (works in portrait + landscape) -->
+      <div class="navwrap" aria-label="Section navigation controls">
+        <button class="btn navbtn" id="navPrev" type="button" aria-label="Scroll nav left">◀️</button>
+        <nav class="nav" id="nav" aria-label="Section navigation"></nav>
+        <button class="btn navbtn" id="navNext" type="button" aria-label="Scroll nav right">▶️</button>
+      </div>
+
+      <button class="btn" id="backToTop" type="button" title="Back to top">⬆️ Top</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="hero">
+      <div class="hero-card">
+        <div class="hero-content">
+          <div class="kicker">🇳🇬 <strong>Citizen-friendly</strong> • Quick scanning • Smooth navigation ✨</div>
+          <h2 class="title">Understand your taxes. Stay compliant. Avoid surprises.</h2>
+          <p class="lead">
+            This single-page app breaks Nigerian tax essentials into 10 bite-size sections: PAYE, side income,
+            records, red flags, and a simple annual self-check. Use the buttons at the top to jump around.
+          </p>
+          <div class="meta-row">
+            <span class="pill">🗓️ Focus: 2026 compliance mindset</span>
+            <span class="pill">🧾 For citizens & salary earners</span>
+            <span class="pill">💼 Side-hustle aware</span>
+            <span class="pill">🧠 Plain language</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10 Sections -->
+    <section id="s1" data-title="1. Basics" data-emoji="🧠">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🧠</div>
+            <div>
+              <h2>1) Tax Basics for Citizens</h2>
+              <p>Start here: your obligations depend on how you earn (salary, business, side income) and where you reside.</p>
+              <div class="tagrow">
+                <span class="tag">Residence matters</span>
+                <span class="tag">Income streams</span>
+                <span class="tag">Keep it simple</span>
+              </div>
+            </div>
+          </div>
+          <div class="badge">Scan in 60s</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>✅ You’re usually “salary-only” if</h3>
+            <ul>
+              <li>Employer pays you monthly and deducts PAYE</li>
+              <li>No regular side income enters your accounts</li>
+              <li>You can explain all inflows as salary/benefits</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>⚠️ You’re “multi-income” if you also earn</h3>
+            <ul>
+              <li>Freelance/consulting money</li>
+              <li>Online sales or creator revenue</li>
+              <li>Rent, commissions, trading, etc.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s2" data-title="2. Registration" data-emoji="🪪">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🪪</div>
+            <div>
+              <h2>2) Registration & Identity</h2>
+              <p>Get your TIN sorted, confirm your state of residence details, and keep your records consistent when changing jobs.</p>
+            </div>
+          </div>
+          <div class="badge">Do once, review yearly</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Checklist</h3>
+            <ul>
+              <li>Have a valid TIN</li>
+              <li>Correct state of residence on record (PAYE is state-based)</li>
+              <li>Employer details up to date</li>
+              <li>Keep a folder for tax documents</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>When to update</h3>
+            <ul>
+              <li>New job / new employer</li>
+              <li>Relocation to a new state</li>
+              <li>Major changes in pay structure</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s3" data-title="3. PAYE" data-emoji="💼">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">💼</div>
+            <div>
+              <h2>3) PAYE: Don’t Just “See Deductions” — Verify Remittance</h2>
+              <p>It’s not enough for PAYE to be deducted on your payslip; remittance is what protects you.</p>
+            </div>
+          </div>
+          <div class="badge">Quarterly habit</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Every quarter, confirm</h3>
+            <ul>
+              <li>PAYE is deducted correctly</li>
+              <li>PAYE is remitted on time</li>
+              <li>Employer can show proof if needed</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>How to self-check</h3>
+            <ul>
+              <li>Compare payslips month-to-month</li>
+              <li>Ask for annual PAYE summary</li>
+              <li>Keep a copy of employment letters and payslips</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s4" data-title="4. What’s Taxable" data-emoji="🧾">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🧾</div>
+            <div>
+              <h2>4) What’s Taxable (Common Traps)</h2>
+              <p>Understand the buckets so you don’t under-declare or overpay.</p>
+            </div>
+          </div>
+          <div class="badge">Avoid surprises</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Usually taxable for salary earners</h3>
+            <ul>
+              <li>Salary & wages</li>
+              <li>Bonuses</li>
+              <li>Cash allowances</li>
+              <li>Some benefits (depends on structure)</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Also taxable if you earn it</h3>
+            <ul>
+              <li>Freelance/consulting income</li>
+              <li>Online sales & creator payouts</li>
+              <li>Rent/investment income (where applicable)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s5" data-title="5. Side Income" data-emoji="🧑‍💻">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🧑‍💻</div>
+            <div>
+              <h2>5) Side Hustles: Treat It Like Real Income</h2>
+              <p>If money enters your account regularly from non-salary sources, plan and track it.</p>
+            </div>
+          </div>
+          <div class="badge">Be proactive</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Examples</h3>
+            <ul>
+              <li>Design/dev gigs</li>
+              <li>Instagram/WhatsApp selling</li>
+              <li>Content creator payouts</li>
+              <li>Paid speaking/training</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Minimum discipline</h3>
+            <ul>
+              <li>Track monthly inflows</li>
+              <li>Keep invoices/receipts (even digital)</li>
+              <li>Set aside a % for tax planning</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s6" data-title="6. Records" data-emoji="🗂️">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🗂️</div>
+            <div>
+              <h2>6) Records That Save You</h2>
+              <p>Good records reduce stress, reduce disputes, and speed up any review.</p>
+            </div>
+          </div>
+          <div class="badge">10-minute setup</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Keep these</h3>
+            <ul>
+              <li>Payslips (monthly)</li>
+              <li>Annual PAYE summary</li>
+              <li>Bank statements</li>
+              <li>Side income evidence (if any)</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Storage tips</h3>
+            <ul>
+              <li>One folder per year</li>
+              <li>PDF scans of receipts</li>
+              <li>Cloud backup + phone backup</li>
+              <li>Keep for multiple years</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s7" data-title="7. Filing" data-emoji="🗓️">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🗓️</div>
+            <div>
+              <h2>7) Filing & Deadlines: Don’t Ghost the System</h2>
+              <p>Even if you think you owe nothing, filing/confirming status (where required) is protective.</p>
+            </div>
+          </div>
+          <div class="badge">Stay current</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Rules of thumb</h3>
+            <ul>
+              <li>File when required (don’t assume)</li>
+              <li>Keep proof of filing/payment</li>
+              <li>Respond early if contacted</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>When you must pay attention</h3>
+            <ul>
+              <li>Salary + side income</li>
+              <li>Job switches</li>
+              <li>Large one-off inflows (e.g., asset sale)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s8" data-title="8. Red Flags" data-emoji="🚩">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🚩</div>
+            <div>
+              <h2>8) Red Flags That Trigger Questions</h2>
+              <p>These patterns increase the chance of scrutiny—fix them before they become a problem.</p>
+            </div>
+          </div>
+          <div class="badge" style="background:linear-gradient(180deg, rgba(255,204,102,.95), rgba(255,204,102,.75));">Avoid</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>High-risk signals</h3>
+            <ul>
+              <li>Large inflows inconsistent with salary</li>
+              <li>Side income with no records</li>
+              <li>Employer deducts PAYE but can’t prove remittance</li>
+              <li>Multiple accounts receiving business payments</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Quick fixes</h3>
+            <ul>
+              <li>Document income sources</li>
+              <li>Use one account for side business</li>
+              <li>Ask employer for remittance proof</li>
+              <li>Start simple bookkeeping now</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s9" data-title="9. Annual Check" data-emoji="✅">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">✅</div>
+            <div>
+              <h2>9) Annual Personal Tax Check (15 minutes)</h2>
+              <p>Once a year, run this checklist. If you answer “no” to any item, fix it early.</p>
+            </div>
+          </div>
+          <div class="badge">Once a year</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Ask yourself</h3>
+            <ul>
+              <li>Was PAYE deducted and remitted all year?</li>
+              <li>Did I earn any other income?</li>
+              <li>Do bank inflows match my explanations?</li>
+              <li>Do I have my payslips and summaries saved?</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>If “salary + side hustle”</h3>
+            <ul>
+              <li>Did I track monthly side income?</li>
+              <li>Do I have invoices/receipts?</li>
+              <li>Do I set aside money for tax?</li>
+              <li>Is my business registration up to date?</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s10" data-title="10. Action Plan" data-emoji="🚀">
+      <div class="card">
+        <div class="card-head">
+          <div class="hgroup">
+            <div class="icon">🚀</div>
+            <div>
+              <h2>10) Your Simple 30-Day Action Plan</h2>
+              <p>Do these in order. You’ll be ahead of most people.</p>
+            </div>
+          </div>
+          <div class="badge" style="background:linear-gradient(180deg, rgba(255,107,107,.95), rgba(255,107,107,.75));">Start now</div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>Week 1</h3>
+            <ul>
+              <li>Collect payslips + employment docs</li>
+              <li>Confirm TIN + state of residence details</li>
+              <li>Create a “Tax 2026” folder</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Week 2</h3>
+            <ul>
+              <li>Ask HR for PAYE remittance confirmation process</li>
+              <li>List all non-salary income sources</li>
+              <li>Choose one account for side income</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Week 3</h3>
+            <ul>
+              <li>Start monthly tracking (income + expenses)</li>
+              <li>Digitize receipts/invoices</li>
+              <li>Set aside a small % for tax planning</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Week 4</h3>
+            <ul>
+              <li>Do a mini “annual check” now</li>
+              <li>Fix any gaps (records, remittance proof)</li>
+              <li>Schedule a quarterly reminder to review</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div>Swipe the nav pills or tap ◀️ ▶️ to jump by a “page”.</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" id="copyLink" type="button">🔗 Copy link</button>
+            <button class="btn" id="toggleGlow" type="button">✨ Toggle glow</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const nav = document.getElementById('nav');
+    const sections = [...document.querySelectorAll('section[id]')];
+    const chips = [];
+    const header = document.getElementById('topbar');
+
+    function syncHeaderHeight(){
+      const h = header.offsetHeight || 92;
+      document.documentElement.style.setProperty('--headerH', h + 'px');
+    }
+    syncHeaderHeight();
+    window.addEventListener('resize', syncHeaderHeight);
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(syncHeaderHeight);
+      ro.observe(header);
+    }
+
+    function scrollToSection(id){
+      const el = document.getElementById(id);
+      if (!el) return;
+      const headerH = header.offsetHeight || 92;
+      const y = el.getBoundingClientRect().top + window.scrollY - headerH - 12;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+
+    // Build nav
+    sections.forEach((s) => {
+      const title = s.dataset.title || s.id;
+      const emoji = s.dataset.emoji || "•";
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', `Go to ${title}`);
+      btn.innerHTML = `<span class="dot" aria-hidden="true"></span><span>${emoji} ${title}</span>`;
+      btn.addEventListener('click', () => {
+        scrollToSection(s.id);
+        btn.animate([{transform:"translateY(-1px)"},{transform:"translateY(0px)"}], {duration:160, easing:"ease-out"});
+      });
+      nav.appendChild(btn);
+      chips.push({id:s.id, el:btn});
+    });
+
+    // Arrow buttons: scroll by a "page" (viewport width)
+    const prev = document.getElementById('navPrev');
+    const next = document.getElementById('navNext');
+
+    function scrollNavByPage(dir){
+      const amount = nav.clientWidth;
+      nav.scrollBy({ left: dir * amount, behavior: 'smooth' });
+    }
+    prev.addEventListener('click', () => scrollNavByPage(-1));
+    next.addEventListener('click', () => scrollNavByPage(1));
+
+    // Active chip highlighting
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          chips.forEach(c => c.el.classList.toggle('active', c.id === e.target.id));
+        }
+      });
+    }, {
+      root: null,
+      threshold: 0.25,
+      rootMargin: `-${(header.offsetHeight || 92) + 10}px 0px -55% 0px`
+    });
+    sections.forEach(s => io.observe(s));
+
+    // Back to top
+    document.getElementById('backToTop').addEventListener('click', () => {
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+
+    // Copy link + glow + toast
+    document.getElementById('copyLink')?.addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(location.href);
+        toast("✅ Link copied");
+      }catch(e){
+        toast("⚠️ Copy failed");
+      }
+    });
+
+    const toggleGlow = document.getElementById('toggleGlow');
+    let glowOn = true;
+    toggleGlow?.addEventListener('click', () => {
+      glowOn = !glowOn;
+      document.body.style.setProperty('--shadow', glowOn ? "0 18px 50px rgba(0,0,0,.35)" : "0 12px 30px rgba(0,0,0,.22)");
+      toast(glowOn ? "✨ Glow on" : "🫥 Glow reduced");
+    });
+
+    const t = document.createElement('div');
+    t.style.cssText = `
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.12);
+      color: #e8fff1; padding: 10px 12px; border-radius: 999px;
+      font-size: 12px; opacity: 0; pointer-events: none; backdrop-filter: blur(10px);
+      box-shadow: 0 18px 40px rgba(0,0,0,.35); z-index: 100;
+      transition: opacity .18s ease, transform .18s ease;
+    `;
+    document.body.appendChild(t);
+    let toastTimer = null;
+
+    function toast(msg){
+      clearTimeout(toastTimer);
+      t.textContent = msg;
+      t.style.opacity = '1';
+      t.style.transform = 'translateX(-50%) translateY(-4px)';
+      toastTimer = setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(-50%) translateY(0px)';
+      }, 1400);
+    }
+  </script>
+</body>
+</html>

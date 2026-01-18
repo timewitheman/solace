@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Taxer - Next Steps | Compliance Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            yellow: '#FFD700',
+                            dark: '#0F172A',
+                            beige: '#F8FAFC',
+                            green: '#10B981',
+                            red: '#EF4444',
+                            purple: '#8B5CF6'
+                        }
+                    },
+                    screens: {
+                        'land': { 'raw': '(orientation: landscape)' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            background-color: #F8FAFC; 
+            color: #0F172A; 
+            -webkit-tap-highlight-color: transparent;
+            height: 100vh; height: 100dvh; 
+            overflow: hidden; 
+            display: flex; flex-direction: column;
+        }
+
+        /* Landscape Layout */
+        @media (orientation: landscape) {
+            body { max-width: 48rem !important; margin: 0 auto; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; }
+            #main-container { padding-bottom: 1rem; }
+        }
+
+        .active-section { display: block; animation: slideIn 0.3s ease-out; }
+        .hidden-section { display: none; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Progress Bar Transition */
+        .progress-fill { transition: width 0.4s ease-in-out; }
+    </style>
+</head>
+<body class="w-full max-w-md mx-auto bg-brand-beige shadow-2xl border-x border-gray-200 relative">
+
+    <header class="bg-brand-dark p-5 pt-6 rounded-b-[1.5rem] shadow-md z-30 flex-none relative w-full text-white">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <button onclick="goHome()" class="bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors">
+                    <i class="ph-bold ph-house text-brand-yellow text-xl"></i>
+                </button>
+                <div>
+                    <h1 class="font-extrabold text-xl leading-none tracking-tight">Taxer<span class="text-brand-yellow">.</span></h1>
+                    <p class="text-[10px] font-medium text-brand-yellow opacity-90 tracking-wider">Next Steps Guide</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Step</div>
+                <div class="text-xl font-extrabold text-brand-yellow leading-none"><span id="step-number">1</span><span class="text-gray-500 text-sm">/7</span></div>
+            </div>
+        </div>
+        
+        <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+            <div id="progress-bar" class="progress-fill h-full bg-brand-yellow w-[14%]"></div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-5 pb-24 scroll-smooth w-full relative" id="main-container">
+
+        <div id="step-1" class="active-section space-y-4">
+            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">Foundation</span>
+            <h2 class="text-2xl font-extrabold text-brand-dark">Know Your Tax Status</h2>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-3">
+                <p class="text-sm font-medium text-gray-500">You are classified as a "Salary Earner" if:</p>
+                <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                    <input type="checkbox" id="chk-salary" class="mt-1 w-5 h-5 accent-brand-green rounded">
+                    <span class="text-sm font-bold text-gray-700">I receive monthly wages from an employer.</span>
+                </label>
+                <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                    <input type="checkbox" id="chk-deducted" class="mt-1 w-5 h-5 accent-brand-green rounded">
+                    <span class="text-sm font-bold text-gray-700">PAYE is deducted from my salary at source.</span>
+                </label>
+            </div>
+
+            <div class="bg-orange-50 p-4 rounded-2xl border border-orange-100 flex gap-3">
+                <i class="ph-fill ph-warning-circle text-orange-500 text-xl flex-none"></i>
+                <div class="text-xs text-orange-800 leading-relaxed">
+                    <strong>Note:</strong> If you earn freelance, rental, or side-hustle income, you have extra obligations beyond just PAYE.
+                </div>
+            </div>
+        </div>
+
+        <div id="step-2" class="hidden-section space-y-4">
+            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">Registration</span>
+            <h2 class="text-2xl font-extrabold text-brand-dark">Confirm Registration</h2>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-3">
+                <p class="text-sm font-medium text-gray-500">Do once, review annually:</p>
+                <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                    <input type="checkbox" id="chk-tin" class="mt-1 w-5 h-5 accent-brand-green rounded">
+                    <span class="text-sm font-bold text-gray-700">I have a valid TIN (Tax ID Number).</span>
+                </label>
+                <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                    <input type="checkbox" id="chk-state" class="mt-1 w-5 h-5 accent-brand-green rounded">
+                    <span class="text-sm font-bold text-gray-700">My State of Residence is correct.</span>
+                </label>
+            </div>
+             <p class="text-xs text-center text-gray-400 italic">Changed jobs or moved states? Update your records immediately.</p>
+        </div>
+
+        <div id="step-3" class="hidden-section space-y-4">
+            <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">Crucial Check</span>
+            <h2 class="text-2xl font-extrabold text-brand-dark">Verify Remittance</h2>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                <div class="text-center">
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-1">The Golden Rule</p>
+                    <p class="text-sm font-bold text-brand-dark">"It was deducted" is not enough.<br><span class="text-brand-green">"It was remitted" is what matters.</span></p>
+                </div>
+                <hr class="border-gray-100">
+                <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                    <input type="checkbox" id="chk-remit" class="mt-1 w-5 h-5 accent-brand-green rounded">
+                    <span class="text-sm font-bold text-gray-700">I confirmed my employer actually paid the tax to the government.</span>
+                </label>
+            </div>
+        </div>
+
+        <div id="step-4" class="hidden-section space-y-4">
+            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">Knowledge</span>
+            <h2 class="text-2xl font-extrabold text-brand-dark">What is Taxable?</h2>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-3">
+                <div class="flex items-center gap-3 p-2">
+                    <i class="ph-fill ph-check-circle text-brand-green text-xl"></i>
+                    <span class="text-sm font-bold">Salary & Wages</span>
+                </div>
+                <div class="flex items-center gap-3 p-2">
+                    <i class="ph-fill ph-check-circle text-brand-green text-xl"></i>
+                    <span class="text-sm font-bold">Bonuses & Allowances</span>
+                </div>
+                <div class="p-4 bg-brand-green/10 rounded-xl mt-2 border border-brand-green/20">
+                    <h4 class="text-sm font-bold text-brand-green mb-1">Exemption Alert!</h4>
+                    <p class="text-xs text-gray-600">Low income earners (₦800,000/year or less) generally pay little to no tax.</p>
+                </div>
+                 <label class="flex items-start gap-3 p-3 mt-2 cursor-pointer">
+                    <input type="checkbox" id="chk-knowledge" class="mt-0.5 w-5 h-5 accent-brand-green rounded">
+                    <span class="text-xs font-bold text-gray-500">I understand what part of my income is taxed.</span>
+                </label>
+            </div>
+        </div>
+
+        <div id="step-5" class="hidden-section space-y-4">
+            <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">Side Hustles</span>
+            <h2 class="text-2xl font-extrabold text-brand-dark">Extra Income?</h2>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-3">
+                <p class="text-sm font-medium text-gray-500">Do you earn money from:</p>
+                <ul class="text-sm text-gray-700 space-y-2 list-disc pl-5 mb-4">
+                    <li>Freelance work?</li>
+                    <li>Online business / Sales?</li>
+                    <li>Consulting gigs?</li>
+                </ul>
+                <div class="bg-brand-dark text-white p-4 rounded-xl text-xs leading-relaxed">
+                    <strong>Warning:</strong> The moment you earn outside your salary, you become your own tax manager. You must declare this extra income.
+                </div>
+                 <label class="flex items-start gap-3 p-3 mt-2 cursor-pointer">
+                    <input type="checkbox" id="chk-extra" class="mt-0.5 w-5 h-5 accent-brand-green rounded">
+                    <span class="text-xs font-bold text-gray-500">I have checked my extra income status.</span>
+                </label>
+            </div>
+        </div>
+
+        <div id="step-6" class="hidden-section space-y-4">
+            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">Documentation</span>
+            <h2 class="text-2xl font-extrabold text-brand-dark">Keep Records</h2>
+            <p class="text-xs text-gray-500 font-bold uppercase tracking-wide">"Light But Smart"</p>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-3">
+                <p class="text-sm font-medium text-gray-500">Keep these safe:</p>
+                <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+                    <input type="checkbox" id="chk-records-1" class="w-5 h-5 accent-brand-green rounded">
+                    <span class="text-sm font-bold text-gray-700">Monthly Payslips</span>
+                </label>
+                 <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+                    <input type="checkbox" id="chk-records-2" class="w-5 h-5 accent-brand-green rounded">
+                    <span class="text-sm font-bold text-gray-700">Annual PAYE Summary</span>
+                </label>
+            </div>
+            <p class="text-[10px] text-gray-400 text-center">These protect you during an audit.</p>
+        </div>
+
+        <div id="step-7" class="hidden-section space-y-4">
+            <span class="bg-brand-green text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide">Final Report</span>
+            <h2 class="text-2xl font-extrabold text-brand-dark">Your Compliance Status</h2>
+            
+            <div id="compliance-result" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                </div>
+
+            <div class="bg-brand-dark text-white p-5 rounded-3xl shadow-lg mt-4 relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-10"><i class="ph-fill ph-brain text-8xl"></i></div>
+                <h3 class="text-lg font-bold text-brand-yellow mb-2 relative z-10">Test Your Knowledge</h3>
+                <p class="text-xs text-gray-300 mb-4 relative z-10">You've checked your status. Now verify your understanding.</p>
+                <button onclick="startQuiz()" class="w-full bg-brand-yellow text-brand-dark font-bold py-3 rounded-xl hover:bg-yellow-400 transition relative z-10">
+                    Start Tax IQ Quiz
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-section" class="hidden-section space-y-4 pt-4">
+            <h2 class="text-xl font-extrabold text-brand-dark mb-4">Tax IQ Quiz</h2>
+            <div id="question-card" class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100"></div>
+            <p id="quiz-feedback" class="text-center text-sm font-bold mt-2 h-6"></p>
+        </div>
+
+    </main>
+
+    <nav class="bg-white border-t border-gray-200 p-4 pb-8 absolute bottom-0 w-full z-40 flex justify-between items-center" id="nav-footer">
+        <button onclick="prevStep()" id="btn-prev" class="text-gray-400 font-bold text-sm px-4 py-3 rounded-xl hover:bg-gray-50 disabled:opacity-30" disabled>
+            <i class="ph-bold ph-arrow-left"></i> Back
+        </button>
+        
+        <button onclick="nextStep()" id="btn-next" class="bg-brand-dark text-white font-bold text-sm px-8 py-3 rounded-xl hover:bg-gray-800 shadow-lg shadow-brand-dark/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+            Next Step <i class="ph-bold ph-arrow-right"></i>
+        </button>
+    </nav>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 7;
+        
+        // Quiz Data
+        const questions = [
+            { q: "Is 'It was deducted' enough proof for tax?", a: false, feedback: "No! 'It was remitted' is what matters." },
+            { q: "If you earn freelance income, are you just a salary earner?", a: false, feedback: "No! You have extra obligations." },
+            { q: "Is the first ₦800k of income tax-free?", a: true, feedback: "Yes! Low income exemption applies." }
+        ];
+        let quizIndex = 0;
+
+        function goHome() {
+            if(confirm("Restart the checklist?")) {
+                location.reload();
+            }
+        }
+
+        function updateUI() {
+            // Update Progress Bar
+            const percentage = (currentStep / totalSteps) * 100;
+            document.getElementById('progress-bar').style.width = percentage + '%';
+            document.getElementById('step-number').innerText = currentStep;
+
+            // Show/Hide Sections
+            for(let i=1; i<=totalSteps; i++) {
+                const el = document.getElementById(`step-${i}`);
+                if (i === currentStep) {
+                    el.classList.remove('hidden-section');
+                    el.classList.add('active-section');
+                } else {
+                    el.classList.remove('active-section');
+                    el.classList.add('hidden-section');
+                }
+            }
+
+            // Button States
+            document.getElementById('btn-prev').disabled = (currentStep === 1);
+            const nextBtn = document.getElementById('btn-next');
+            
+            if (currentStep === totalSteps) {
+                // We are at the Report Card
+                generateReportCard();
+                document.getElementById('nav-footer').classList.add('hidden'); 
+            } else {
+                nextBtn.innerHTML = 'Next Step <i class="ph-bold ph-arrow-right"></i>';
+                document.getElementById('nav-footer').classList.remove('hidden');
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateUI();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateUI();
+            }
+        }
+
+        // === REPORT CARD LOGIC ===
+        function generateReportCard() {
+            const recommendations = [];
+            let score = 0;
+            const checks = [
+                { id: 'chk-tin', weight: 2, msg: "Visit JTB or NIRS website to generate your TIN." },
+                { id: 'chk-state', weight: 1, msg: "Update your State of Residence with HR or Tax Authority." },
+                { id: 'chk-remit', weight: 3, msg: "Ask your employer for your Tax Clearance Certificate (TCC) or receipt." },
+                { id: 'chk-extra', weight: 2, msg: "You must declare side income separately via Direct Assessment." },
+                { id: 'chk-records-1', weight: 1, msg: "Start saving your monthly payslips digitally." }
+            ];
+
+            checks.forEach(item => {
+                if(document.getElementById(item.id).checked) {
+                    score += item.weight;
+                } else {
+                    recommendations.push(item.msg);
+                }
+            });
+
+            // Determine Status
+            let statusHTML = '';
+            let statusColor = '';
+            
+            if (recommendations.length === 0) {
+                statusColor = 'text-green-600';
+                statusHTML = `
+                    <div class="bg-green-50 p-6 text-center border-b border-gray-100">
+                        <i class="ph-fill ph-seal-check text-green-500 text-6xl mb-2"></i>
+                        <h3 class="text-2xl font-bold text-brand-dark">Tax Ready!</h3>
+                        <p class="text-sm text-green-700">You have ticked all the right boxes for 2026 compliance.</p>
+                    </div>`;
+            } else {
+                statusColor = 'text-orange-600';
+                statusHTML = `
+                    <div class="bg-orange-50 p-6 text-center border-b border-gray-100">
+                        <i class="ph-fill ph-clipboard-text text-orange-500 text-6xl mb-2"></i>
+                        <h3 class="text-2xl font-bold text-brand-dark">Action Required</h3>
+                        <p class="text-sm text-orange-700">You have ${recommendations.length} pending items to fix.</p>
+                    </div>`;
+            }
+
+            // Build List
+            let listHTML = '';
+            if (recommendations.length > 0) {
+                listHTML = `<div class="p-5"><h4 class="text-xs font-bold text-gray-400 uppercase mb-3">Your To-Do List</h4><ul class="space-y-3">`;
+                recommendations.forEach(rec => {
+                    listHTML += `
+                        <li class="flex gap-3 items-start text-sm text-gray-600">
+                            <i class="ph-bold ph-x-circle text-red-500 mt-0.5 flex-none"></i>
+                            ${rec}
+                        </li>`;
+                });
+                listHTML += `</ul></div>`;
+            } else {
+                listHTML = `<div class="p-5 text-center text-sm text-gray-500">Keep up the good work. Remember, PAYE protects you only if it is correct.</div>`;
+            }
+
+            document.getElementById('compliance-result').innerHTML = statusHTML + listHTML;
+        }
+
+        // QUIZ LOGIC
+        function startQuiz() {
+            document.getElementById('compliance-result').classList.add('hidden');
+            document.getElementById('step-7').querySelector('h2').innerText = "Knowledge Check";
+            document.getElementById('quiz-section').classList.remove('hidden-section');
+            document.getElementById('quiz-section').classList.add('active-section');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (quizIndex >= questions.length) {
+                document.getElementById('question-card').innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="ph-fill ph-trophy text-brand-yellow text-6xl mb-4"></i>
+                        <h3 class="text-2xl font-bold text-brand-dark">Quiz Complete!</h3>
+                        <p class="text-gray-500 mt-2">You are a Tax Pro.</p>
+                        <button onclick="location.reload()" class="mt-6 text-brand-green font-bold underline">Restart App</button>
+                    </div>
+                `;
+                document.getElementById('quiz-feedback').innerText = "";
+                return;
+            }
+
+            const q = questions[quizIndex];
+            document.getElementById('question-card').innerHTML = `
+                <h3 class="text-lg font-bold text-gray-800 mb-6 text-center">${q.q}</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="answerQuiz(true)" class="bg-green-100 text-green-800 font-bold py-3 rounded-xl hover:bg-green-200 transition">Yes</button>
+                    <button onclick="answerQuiz(false)" class="bg-red-100 text-red-800 font-bold py-3 rounded-xl hover:bg-red-200 transition">No</button>
+                </div>
+            `;
+        }
+
+        function answerQuiz(userAnswer) {
+            const q = questions[quizIndex];
+            const feedbackEl = document.getElementById('quiz-feedback');
+            
+            if (userAnswer === q.a) {
+                feedbackEl.innerHTML = `<span class="text-green-600"><i class="ph-bold ph-check"></i> Correct! ${q.feedback}</span>`;
+                setTimeout(() => {
+                    quizIndex++;
+                    feedbackEl.innerText = "";
+                    loadQuestion();
+                }, 1500);
+            } else {
+                feedbackEl.innerHTML = `<span class="text-red-500"><i class="ph-bold ph-x"></i> Oops. ${q.feedback}</span>`;
+            }
+        }
+
+        // Init
+        updateUI();
+    </script>
+</body>
+</html>
