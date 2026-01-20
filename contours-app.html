@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Contour Segmenter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Video and Canvas container */
+        #container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            height: 60vh;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0; /* Hidden, we process to canvas */
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Controls Area */
+        #controls {
+            flex: 1;
+            width: 100%;
+            max-width: 640px;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #222;
+            border-top: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        label { font-size: 0.9rem; color: #aaa; }
+        
+        select, button {
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+        }
+
+        select { background: #333; color: white; }
+        
+        button#actionBtn {
+            background: #007aff;
+            color: white;
+            font-weight: bold;
+            width: 100%;
+            padding: 15px;
+        }
+
+        /* Slider for advanced mode */
+        input[type=range] { width: 100%; }
+        
+        #advanced-controls {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            gap: 10px;
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="status">Loading OpenCV...</div>
+
+    <div id="container">
+        <video id="videoInput" playsinline webkit-playsinline></video>
+        <canvas id="canvasOutput"></canvas>
+    </div>
+
+    <div id="controls">
+        <div class="control-row">
+            <label>Mode:</label>
+            <select id="modeSelector">
+                <option value="basic">Basic (Binary)</option>
+                <option value="advanced">Advanced (Canny)</option>
+            </select>
+        </div>
+
+        <div id="advanced-controls">
+            <div class="control-row">
+                <label>Threshold 1:</label>
+                <span id="t1-val">100</span>
+            </div>
+            <input type="range" id="thresh1" min="0" max="255" value="100">
+            
+            <div class="control-row">
+                <label>Threshold 2:</label>
+                <span id="t2-val">200</span>
+            </div>
+            <input type="range" id="thresh2" min="0" max="255" value="200">
+        </div>
+
+        <button id="actionBtn">Start Camera</button>
+    </div>
+
+    <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+
+    <script>
+        let video = document.getElementById('videoInput');
+        let canvas = document.getElementById('canvasOutput');
+        let ctx = canvas.getContext('2d', { alpha: false }); // Optimize for speed
+        let actionBtn = document.getElementById('actionBtn');
+        let status = document.getElementById('status');
+        let modeSelector = document.getElementById('modeSelector');
+        let advControls = document.getElementById('advanced-controls');
+
+        let streaming = false;
+        let stream = null;
+        let animationId = null;
+
+        // OpenCV Variables
+        let src = null;
+        let dst = null;
+        let gray = null;
+        let contours = null;
+        let hierarchy = null;
+
+        function onOpenCvReady() {
+            status.innerText = "OpenCV Ready";
+            actionBtn.disabled = false;
+        }
+
+        // Toggle UI for Advanced Mode
+        modeSelector.addEventListener('change', (e) => {
+            if(e.target.value === 'advanced') {
+                advControls.style.display = 'flex';
+            } else {
+                advControls.style.display = 'none';
+            }
+        });
+
+        // Update Slider Values UI
+        document.getElementById('thresh1').oninput = function() { document.getElementById('t1-val').innerText = this.value; }
+        document.getElementById('thresh2').oninput = function() { document.getElementById('t2-val').innerText = this.value; }
+
+        actionBtn.addEventListener('click', () => {
+            if (!streaming) {
+                startCamera();
+            } else {
+                stopCamera();
+            }
+        });
+
+        async function startCamera() {
+            try {
+                // Mobile constraint: prefer back camera
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                video.play();
+                
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    startProcessing();
+                };
+
+                streaming = true;
+                actionBtn.innerText = "Stop Camera";
+                actionBtn.style.background = "#ff3b30";
+            } catch (err) {
+                console.error("Camera Error:", err);
+                status.innerText = "Camera access denied or error.";
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            streaming = false;
+            cancelAnimationFrame(animationId);
+            actionBtn.innerText = "Start Camera";
+            actionBtn.style.background = "#007aff";
+            
+            // Clean up memory
+            if(src) src.delete();
+            if(dst) dst.delete();
+            if(gray) gray.delete();
+            if(contours) contours.delete();
+            if(hierarchy) hierarchy.delete();
+        }
+
+        function startProcessing() {
+            // Initialize Matrices
+            src = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
+            dst = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
+            gray = new cv.Mat();
+            contours = new cv.MatVector();
+            hierarchy = new cv.Mat();
+
+            processVideo();
+        }
+
+        function processVideo() {
+            if (!streaming) return;
+
+            try {
+                // 1. Draw video frame to canvas (intermediate step for OpenCV to read)
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // 2. Read canvas data into OpenCV Mat
+                src.data.set(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
+
+                // 3. Convert to Grayscale
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+                let mode = modeSelector.value;
+
+                if (mode === 'basic') {
+                    // --- BASIC MODE: Simple Thresholding ---
+                    // Applies a fixed binary threshold. 
+                    // Good for high contrast (dark subject on light background).
+                    cv.threshold(gray, dst, 100, 255, cv.THRESH_BINARY_INV);
+                    
+                    // Find Contours
+                    cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                    
+                    // Draw on original source
+                    // (Index -1 draws all contours, color Green, thickness 2)
+                    cv.drawContours(src, contours, -1, [0, 255, 0, 255], 2);
+
+                } else {
+                    // --- ADVANCED MODE: Canny Edge Detection ---
+                    // Uses gradient analysis. Better for detailed shapes.
+                    let t1 = parseInt(document.getElementById('thresh1').value);
+                    let t2 = parseInt(document.getElementById('thresh2').value);
+
+                    // Blur to reduce noise
+                    cv.GaussianBlur(gray, gray, {width: 5, height: 5}, 0);
+                    
+                    // Canny Edge Detection
+                    cv.Canny(gray, dst, t1, t2, 3, false);
+                    
+                    // Find contours from edges
+                    cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+                    // Draw contours in Red
+                    cv.drawContours(src, contours, -1, [255, 0, 0, 255], 2);
+                }
+
+                // 4. Show Result
+                cv.imshow('canvasOutput', src);
+
+                // Loop
+                animationId = requestAnimationFrame(processVideo);
+
+            } catch (err) {
+                console.error(err);
+                status.innerText = "Processing Error (Check Console)";
+            }
+        }
+    </script>
+</body>
+</html>
