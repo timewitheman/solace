@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoruba Workstation v4: Speech Interface</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --classic-color: #ff4081;   /* Pink */
+            --organic-color: #00e676;   /* Green */
+            --poly-color: #aa00ff;      /* Purple */
+            --spectrum-color: #2979ff;  /* Blue */
+            --rec-color: #ff3d00;       /* Red for Mic */
+            --border-color: #333;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 { margin: 0; color: #fff; letter-spacing: 1px; }
+        h4 { margin: 5px 0 20px 0; color: #757575; font-weight: normal; }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* HEADER */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .label {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* INPUT AREA WITH MIC */
+        .input-group {
+            position: relative;
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%; height: 70px; background: #000; color: #fff;
+            border: 1px solid #333; border-radius: 4px; padding: 10px;
+            font-family: var(--font-mono); resize: none; box-sizing: border-box;
+            padding-right: 50px; /* Space for mic button */
+        }
+
+        .btn-mic {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: transparent;
+            border: 1px solid #555;
+            color: #aaa;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+        .btn-mic:hover { border-color: #fff; color: #fff; }
+        .btn-mic.listening { background: var(--rec-color); color: #fff; border-color: var(--rec-color); animation: pulse 1.5s infinite; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 61, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 61, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 61, 0, 0); }
+        }
+
+        /* CANVAS */
+        .canvas-container {
+            position: relative;
+            height: 140px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        .playhead {
+            position: absolute; top: 0; bottom: 0; left: 0;
+            width: 2px; background: #fff;
+            pointer-events: none; display: none;
+            box-shadow: 0 0 5px #fff;
+        }
+
+        /* CONTROLS */
+        .controls-grid { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end; }
+        .params-area { display: flex; gap: 15px; flex-wrap: wrap; }
+        .slider-group { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.7rem; color: #aaa; font-weight: bold; display: flex; justify-content: space-between; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #888; }
+
+        /* TRANSPORT */
+        .transport-bar { display: flex; gap: 5px; background: #252525; padding: 5px; border-radius: 6px; }
+        button {
+            border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;
+            color: #aaa; background: transparent; font-size: 1.1rem;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        button:hover { color: #fff; background: #333; }
+        .btn-dl { font-size: 0.75rem; margin-left: 5px; background: #333; color: #fff; height: 100%; }
+        button.active-loop { color: var(--organic-color); text-shadow: 0 0 5px var(--organic-color); }
+        
+        /* Spectrum */
+        #spectrum-canvas { height: 100px; background: #050505; }
+
+    </style>
+</head>
+<body>
+
+    <h1>Yoruba Workstation v4</h1>
+    <h4>Speech-to-Logic Interface</h4>
+
+    <div class="container">
+
+        <div class="panel">
+            <label style="color:var(--text-color)">Input Source (Text or Voice)</label>
+            <div class="input-group">
+                <textarea id="input-text" placeholder="Type here or click the mic to speak...">The Yoruba Logic Encoder</textarea>
+                <button id="btn-mic" class="btn-mic" title="Speak Input">🎤</button>
+            </div>
+            <div id="mic-status" style="font-size: 0.8rem; color: #777; margin-top: 5px; height: 1rem;"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="label" style="color:var(--classic-color)">
+                    <div class="dot" style="background:var(--classic-color)"></div>
+                    Deck A: Classic (Discrete Steps)
+                </div>
+                <button onclick="deckClassic.snapshot()">📷</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas-classic"></canvas>
+                <div id="playhead-classic" class="playhead"></div>
+            </div>
+            <div class="controls-grid">
+                <div class="params-area">
+                    <div class="slider-group">
+                        <label>Speed (ms) <span id="disp-speed-classic">150</span></label>
+                        <input type="range" id="param-speed-classic" min="10" max="400" value="150">
+                    </div>
+                </div>
+                <div class="transport-bar">
+                    <button onclick="deckClassic.play()">▶</button>
+                    <button onclick="deckClassic.pause()">⏸</button>
+                    <button onclick="deckClassic.stop()">⏹</button>
+                    <button id="btn-loop-classic" onclick="deckClassic.toggleLoop()">🔁</button>
+                    <button class="btn-dl" onclick="deckClassic.download()">⬇ WAV</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="label" style="color:var(--organic-color)">
+                    <div class="dot" style="background:var(--organic-color)"></div>
+                    Deck B: Ede Iṣiro (Organic Glide)
+                </div>
+                <button onclick="deckOrganic.snapshot()">📷</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas-organic"></canvas>
+                <div id="playhead-organic" class="playhead"></div>
+            </div>
+            <div class="controls-grid">
+                <div class="params-area">
+                    <div class="slider-group">
+                        <label>Speed (ms) <span id="disp-speed-organic">150</span></label>
+                        <input type="range" id="param-speed-organic" min="10" max="400" value="150">
+                    </div>
+                    <div class="slider-group">
+                        <label style="color:var(--organic-color)">Glide (%) <span id="disp-glide-organic">30%</span></label>
+                        <input type="range" id="param-glide-organic" min="0" max="100" value="30">
+                    </div>
+                </div>
+                <div class="transport-bar">
+                    <button onclick="deckOrganic.play()">▶</button>
+                    <button onclick="deckOrganic.pause()">⏸</button>
+                    <button onclick="deckOrganic.stop()">⏹</button>
+                    <button id="btn-loop-organic" onclick="deckOrganic.toggleLoop()">🔁</button>
+                    <button class="btn-dl" onclick="deckOrganic.download()">⬇ WAV</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="label" style="color:var(--poly-color)">
+                    <div class="dot" style="background:var(--poly-color)"></div>
+                    Deck C: Choral (Polyphonic)
+                </div>
+                <button onclick="deckPoly.snapshot()">📷</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="canvas-poly"></canvas>
+                <div id="playhead-poly" class="playhead"></div>
+            </div>
+            <div class="controls-grid">
+                <div class="params-area">
+                    <div class="slider-group">
+                        <label>Speed (ms) <span id="disp-speed-poly">150</span></label>
+                        <input type="range" id="param-speed-poly" min="10" max="400" value="150">
+                    </div>
+                    <div class="slider-group">
+                        <label style="color:var(--poly-color)">Glide (%) <span id="disp-glide-poly">30%</span></label>
+                        <input type="range" id="param-glide-poly" min="0" max="100" value="30">
+                    </div>
+                    <div class="slider-group">
+                        <label style="color:var(--poly-color)">Ratio <span id="disp-ratio-poly">1.5x</span></label>
+                        <input type="range" id="param-ratio-poly" min="0.5" max="2.0" step="0.1" value="1.5">
+                    </div>
+                </div>
+                <div class="transport-bar">
+                    <button onclick="deckPoly.play()">▶</button>
+                    <button onclick="deckPoly.pause()">⏸</button>
+                    <button onclick="deckPoly.stop()">⏹</button>
+                    <button id="btn-loop-poly" onclick="deckPoly.toggleLoop()">🔁</button>
+                    <button class="btn-dl" onclick="deckPoly.download()">⬇ WAV</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="label" style="color:var(--spectrum-color)">Master Output Spectrum</div>
+            </div>
+            <div class="canvas-container" style="height:100px;">
+                <canvas id="spectrum-canvas"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. WEB SPEECH API ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const micBtn = document.getElementById('btn-mic');
+        const micStatus = document.getElementById('mic-status');
+        const textArea = document.getElementById('input-text');
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            micBtn.onclick = () => {
+                if (micBtn.classList.contains('listening')) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                }
+            };
+
+            recognition.onstart = () => {
+                micBtn.classList.add('listening');
+                micStatus.innerText = "Listening...";
+                micBtn.innerHTML = "🛑";
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('listening');
+                micStatus.innerText = "";
+                micBtn.innerHTML = "🎤";
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                textArea.value = transcript;
+                // Auto-trigger refresh
+                updateDecks();
+            };
+
+            recognition.onerror = (e) => {
+                micStatus.innerText = "Error: " + e.error;
+                micBtn.classList.remove('listening');
+                micBtn.innerHTML = "🎤";
+            };
+        } else {
+            micBtn.style.display = 'none';
+            micStatus.innerText = "Web Speech API not supported in this browser.";
+        }
+
+        // --- 2. CORE LOGIC ---
+        class YorubaEncoder {
+            encodeChar(char) {
+                const val = char.charCodeAt(0);
+                const anchorIdx = Math.ceil(val / 20);
+                const anchorVal = anchorIdx * 20;
+                let currentBase = anchorVal;
+                let diff = val - currentBase;
+                if (Math.abs(val - (anchorVal - 10)) < Math.abs(diff)) currentBase = anchorVal - 10;
+                diff = val - currentBase;
+                let offset = Math.abs(diff);
+                let anchorBit = (anchorIdx - 1) & 0b111;
+                let byte = (anchorBit << 5) | offset;
+                return 150 + (byte * 2.5) + (diff * 5); 
+            }
+            encode(text) { return text.split('').map(c => this.encodeChar(c)); }
+        }
+
+        // --- 3. AUDIO SYSTEM ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let globalCtx;
+        let masterAnalyser;
+
+        function initGlobalAudio() {
+            if (!globalCtx) {
+                globalCtx = new AudioContext();
+                masterAnalyser = globalCtx.createAnalyser();
+                masterAnalyser.fftSize = 512;
+                masterAnalyser.connect(globalCtx.destination);
+                startSpectrum();
+            }
+            if (globalCtx.state === 'suspended') globalCtx.resume();
+        }
+
+        function startSpectrum() {
+            const canvas = document.getElementById('spectrum-canvas');
+            const ctx = canvas.getContext('2d');
+            const dataArray = new Uint8Array(masterAnalyser.frequencyBinCount);
+            function draw() {
+                requestAnimationFrame(draw);
+                canvas.width = canvas.parentElement.offsetWidth;
+                canvas.height = canvas.parentElement.offsetHeight;
+                masterAnalyser.getByteFrequencyData(dataArray);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                const barWidth = (canvas.width / dataArray.length) * 2.5;
+                let x = 0;
+                for(let i=0; i<dataArray.length; i++) {
+                    const barHeight = dataArray[i]/255 * canvas.height;
+                    ctx.fillStyle = `hsl(${200 + (barHeight)}, 100%, 50%)`;
+                    ctx.fillRect(x, canvas.height-barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+
+        class AudioDeck {
+            constructor(type, canvasId, playheadId) {
+                this.type = type;
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.playhead = document.getElementById(playheadId);
+                this.encoder = new YorubaEncoder();
+                this.freqs = [];
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.isLooping = false;
+                this.source = null;
+                this.startTime = 0;
+                this.pausedAt = 0;
+                
+                // UI Binds
+                this.speedSlider = document.getElementById(`param-speed-${type}`);
+                this.speedDisp = document.getElementById(`disp-speed-${type}`);
+                this.loopBtn = document.getElementById(`btn-loop-${type}`);
+
+                this.speedSlider.oninput = (e) => {
+                    this.speedDisp.innerText = e.target.value;
+                    this.refresh();
+                };
+
+                if (type !== 'classic') {
+                    this.glideSlider = document.getElementById(`param-glide-${type}`);
+                    this.glideDisp = document.getElementById(`disp-glide-${type}`);
+                    this.glideSlider.oninput = (e) => {
+                        this.glideDisp.innerText = e.target.value + '%';
+                        this.refresh();
+                    };
+                }
+                if (type === 'poly') {
+                    this.ratioSlider = document.getElementById(`param-ratio-poly`);
+                    this.ratioDisp = document.getElementById(`disp-ratio-poly`);
+                    this.ratioSlider.oninput = (e) => {
+                        this.ratioDisp.innerText = e.target.value + 'x';
+                        this.refresh();
+                    };
+                }
+                this.refresh();
+            }
+
+            getParams() {
+                let ratio = 1.0;
+                if (this.type === 'poly') ratio = parseFloat(this.ratioSlider.value);
+                return {
+                    speed: parseInt(this.speedSlider.value),
+                    glide: this.type === 'classic' ? 0 : parseInt(this.glideSlider.value) / 100,
+                    ratio: ratio
+                };
+            }
+
+            refresh() {
+                const text = document.getElementById('input-text').value;
+                this.freqs = this.encoder.encode(text);
+                this.drawGraph();
+            }
+
+            async renderBuffer() {
+                initGlobalAudio();
+                const params = this.getParams();
+                const step = params.speed / 1000;
+                const totalDur = this.freqs.length * step + 0.5;
+                const offline = new OfflineAudioContext(1, 44100 * totalDur, 44100);
+                const gain = offline.createGain();
+                gain.connect(offline.destination);
+
+                const voices = [];
+                const osc1 = offline.createOscillator();
+                osc1.type = this.type === 'classic' ? 'square' : 'sine';
+                osc1.connect(gain);
+                voices.push({ osc: osc1, ratio: 1.0 });
+
+                if (this.type === 'poly') {
+                    const osc2 = offline.createOscillator();
+                    osc2.type = 'sine';
+                    osc2.connect(gain);
+                    voices.push({ osc: osc2, ratio: params.ratio });
+                    gain.gain.value = 0.5;
+                }
+
+                const glideTime = step * params.glide;
+
+                this.freqs.forEach((baseFreq, i) => {
+                    const time = i * step;
+                    voices.forEach(v => {
+                        const targetFreq = baseFreq * v.ratio;
+                        if (this.type === 'classic') {
+                            v.osc.frequency.setValueAtTime(targetFreq, time);
+                            gain.gain.setValueAtTime(0.1, time);
+                            gain.gain.setValueAtTime(0.1, time + (step * 0.9));
+                            gain.gain.setValueAtTime(0, time + (step * 0.95));
+                        } else {
+                            if(i===0) v.osc.frequency.setValueAtTime(targetFreq, time);
+                            else v.osc.frequency.linearRampToValueAtTime(targetFreq, time + glideTime);
+                            
+                            let vol = this.type === 'poly' ? 0.3 : 0.5;
+                            gain.gain.setValueAtTime(0, time);
+                            gain.gain.linearRampToValueAtTime(vol, time + (step * 0.2));
+                            gain.gain.setValueAtTime(vol, time + (step * 0.8));
+                            gain.gain.linearRampToValueAtTime(0, time + step);
+                        }
+                    });
+                });
+
+                voices.forEach(v => { v.osc.start(0); v.osc.stop(totalDur); });
+                return await offline.startRendering();
+            }
+
+            async play() {
+                initGlobalAudio();
+                if (this.isPlaying) this.stopSource();
+                this.refresh();
+                const buffer = await this.renderBuffer();
+                this.duration = buffer.duration;
+                this.source = globalCtx.createBufferSource();
+                this.source.buffer = buffer;
+                this.source.loop = this.isLooping;
+                this.source.connect(masterAnalyser);
+                const offset = this.pausedAt % this.duration;
+                this.startTime = globalCtx.currentTime - offset;
+                this.source.start(0, offset);
+                this.isPlaying = true;
+                this.isPaused = false;
+                this.animatePlayhead();
+                this.source.onended = () => { if(!this.isLooping && !this.isPaused) this.stop(); };
+            }
+
+            pause() {
+                if(!this.isPlaying) return;
+                this.stopSource();
+                this.isPaused = true;
+                this.pausedAt = globalCtx.currentTime - this.startTime;
+            }
+            stop() {
+                this.stopSource();
+                this.isPaused = false;
+                this.pausedAt = 0;
+                this.playhead.style.display = 'none';
+            }
+            stopSource() {
+                if(this.source) { try{this.source.stop()}catch(e){}; this.source=null; }
+                this.isPlaying = false;
+                cancelAnimationFrame(this.animId);
+            }
+            toggleLoop() {
+                this.isLooping = !this.isLooping;
+                if(this.source) this.source.loop = this.isLooping;
+                if(this.isLooping) this.loopBtn.classList.add('active-loop');
+                else this.loopBtn.classList.remove('active-loop');
+            }
+            drawGraph() {
+                const w = this.canvas.width = this.canvas.parentElement.offsetWidth;
+                const h = this.canvas.height = 140;
+                const ctx = this.ctx;
+                const freqs = this.freqs;
+                let minF=Infinity, maxF=-Infinity;
+                let ratio = (this.type === 'poly') ? parseFloat(this.ratioSlider.value) : 1.0;
+                if(freqs.length===0) { minF=100; maxF=600; } else {
+                    freqs.forEach(f => {
+                        let f2=f*ratio;
+                        if(f<minF)minF=f; if(f>maxF)maxF=f;
+                        if(f2<minF)minF=f2; if(f2>maxF)maxF=f2;
+                    });
+                }
+                const range = maxF-minF||100;
+                const padding = range*0.2;
+                const pMin=minF-padding, pMax=maxF+padding;
+                const mapY = f => h - ((f-pMin)/(pMax-pMin)*h);
+                
+                ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h);
+                ctx.strokeStyle='#222'; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+                
+                const stepX = w/freqs.length;
+                
+                if(this.type === 'poly') {
+                    ctx.strokeStyle='#5e35b1'; ctx.lineWidth=2; ctx.beginPath();
+                    freqs.forEach((f,i)=>{
+                        const x = (i*stepX)+(stepX/2); const y=mapY(f*ratio);
+                        if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+                    });
+                    ctx.stroke();
+                }
+                
+                if(this.type==='classic') ctx.strokeStyle='#ff4081';
+                else if(this.type==='organic') ctx.strokeStyle='#00e676';
+                else ctx.strokeStyle='#aa00ff';
+                ctx.lineWidth=2; ctx.beginPath();
+                if(this.type==='classic') {
+                    freqs.forEach((f,i)=>{
+                        const x=i*stepX; const y=mapY(f);
+                        ctx.moveTo(x,y); ctx.lineTo(x+stepX-1,y);
+                        if(i<freqs.length-1)ctx.lineTo(x+stepX-1,mapY(freqs[i+1]));
+                    });
+                } else {
+                    freqs.forEach((f,i)=>{
+                        const x=(i*stepX)+(stepX/2); const y=mapY(f);
+                        if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+                    });
+                }
+                ctx.stroke();
+            }
+            animatePlayhead() {
+                if(!this.isPlaying) return;
+                const draw = () => {
+                    if(!this.isPlaying) return;
+                    const elapsed = globalCtx.currentTime - this.startTime;
+                    const progress = (elapsed % this.duration)/this.duration;
+                    this.playhead.style.display='block';
+                    this.playhead.style.left = (progress*this.canvas.width)+'px';
+                    this.animId = requestAnimationFrame(draw);
+                };
+                draw();
+            }
+            snapshot() {
+                const a = document.createElement('a');
+                a.download = `yoruba_${this.type}_graph.png`;
+                a.href = this.canvas.toDataURL();
+                a.click();
+            }
+            async download() {
+                this.refresh();
+                const buffer = await this.renderBuffer();
+                const wav = this.encodeWAV(buffer.getChannelData(0), 44100);
+                const url = URL.createObjectURL(wav);
+                const a = document.createElement('a');
+                a.href=url; a.download=`yoruba_${this.type}.wav`; a.click();
+            }
+            encodeWAV(samples, sampleRate) {
+                const buffer = new ArrayBuffer(44 + samples.length * 2);
+                const view = new DataView(buffer);
+                const writeString = (v, o, s) => { for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+                writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true);
+                writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+                writeString(view, 36, 'data'); view.setUint32(40, samples.length * 2, true);
+                for (let i = 0; i < samples.length; i++) {
+                    let s = Math.max(-1, Math.min(1, samples[i]));
+                    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                }
+                return new Blob([view], { type: 'audio/wav' });
+            }
+        }
+
+        const deckClassic = new AudioDeck('classic', 'canvas-classic', 'playhead-classic');
+        const deckOrganic = new AudioDeck('organic', 'canvas-organic', 'playhead-organic');
+        const deckPoly = new AudioDeck('poly', 'canvas-poly', 'playhead-poly');
+
+        function updateDecks() {
+            deckClassic.refresh();
+            deckOrganic.refresh();
+            deckPoly.refresh();
+        }
+
+        textArea.oninput = updateDecks;
+        window.onresize = () => { deckClassic.drawGraph(); deckOrganic.drawGraph(); deckPoly.drawGraph(); };
+
+    </script>
+</body>
+</html>
