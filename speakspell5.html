@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Speak & Spell: Sampler v14 (Mobile Fix)</title>
+    <style>
+        :root {
+            --case-red: #d32f2f;
+            --face-yellow: #fdd835;
+            --key-orange: #f57c00;
+            --key-blue: #1976d2;
+            --vfd-off: #202820;
+            --vfd-on: #00ffca;
+            --rec-active: #ff1744;
+            --rec-ready: #00e676;
+            --plastic-shadow: inset 0 -4px 4px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* --- UNIT LAYOUT --- */
+        .unit {
+            background-color: var(--case-red);
+            width: 95%; max-width: 400px; aspect-ratio: 3/5;
+            border-radius: 20px; padding: 15px; position: relative;
+            box-shadow: var(--plastic-shadow); display: flex; flex-direction: column;
+            align-items: center; box-sizing: border-box;
+        }
+
+        .handle {
+            width: 50%; height: 6%; background: #1a1a1a;
+            border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
+        }
+
+        .top-section {
+            width: 100%; height: 18%; background: #111; border-radius: 10px 10px 0 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 10px; box-sizing: border-box; border-bottom: 4px solid #000;
+        }
+
+        .speaker-grill {
+            width: 100%; height: 20px;
+            background-image: radial-gradient(#333 20%, transparent 20%);
+            background-size: 4px 4px; opacity: 0.5;
+        }
+
+        .display-window {
+            background: #000; width: 100%; height: 60%;
+            border: 2px solid #333; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        .vfd-text {
+            font-family: 'Courier New', monospace; font-size: clamp(1rem, 6vw, 2.5rem);
+            color: var(--vfd-off); text-transform: uppercase; letter-spacing: 2px;
+            font-weight: bold; white-space: nowrap;
+        }
+
+        .unit.powered-on .vfd-text {
+            color: var(--vfd-on);
+            text-shadow: 0 0 5px var(--vfd-on), 0 0 10px var(--vfd-on);
+        }
+
+        .faceplate {
+            background-color: var(--face-yellow); width: 100%; flex: 1;
+            border-radius: 0 0 15px 15px; padding: 10px; box-sizing: border-box;
+            display: flex; flex-direction: column; border: 4px solid #c62828;
+            position: relative;
+        }
+
+        /* --- KEYPAD --- */
+        .keypad {
+            display: grid; grid-template-columns: repeat(10, 1fr);
+            gap: 1.5%; width: 100%; margin-bottom: 1.5%;
+        }
+
+        .key {
+            aspect-ratio: 1; background: #d32f2f; border-radius: 3px; border: none;
+            color: #fff; font-weight: bold; font-size: clamp(0.5rem, 2.5vw, 1rem);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 1px 1px 0px rgba(0,0,0,0.3); cursor: pointer; padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .key:active { transform: translate(1px, 1px); box-shadow: none; }
+        .key.func { background: var(--key-blue); font-size: clamp(0.3rem, 1.8vw, 0.6rem); line-height: 1; }
+        .key.char { background: var(--key-orange); color: #000; }
+        .key.on { background: var(--key-orange); color: #000; border: 2px solid #fff; } 
+        .key.off { background: var(--key-orange); color: #000; }
+
+        /* --- INPUT MODULE --- */
+        .input-module {
+            margin-top: auto; width: 100%; display: flex; gap: 5px;
+            background: #c62828; padding: 8px; border-radius: 6px; box-sizing: border-box;
+        }
+
+        #custom-input {
+            flex: 1; background: #fff; border: 2px solid #000;
+            font-family: 'Courier New', monospace; text-transform: uppercase;
+            padding: 5px; font-weight: bold; font-size: 1rem; border-radius: 4px;
+        }
+
+        #btn-say {
+            background: var(--key-blue); color: #fff; border: 2px solid #000;
+            font-weight: bold; border-radius: 4px; padding: 0 15px;
+            cursor: pointer; text-transform: uppercase;
+        }
+
+        .logo {
+            font-family: 'Georgia', serif; font-style: italic; font-size: clamp(1rem, 4vw, 1.2rem);
+            color: #d32f2f; margin-top: 10px; text-align: center; font-weight: bold;
+        }
+        .logo span { color: #1565c0; }
+
+        /* --- RECORDING OVERLAY --- */
+        .rec-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 20px;
+            color: #fff; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+
+        .rec-status { font-family: 'Courier New', monospace; color: var(--vfd-on); font-size: 1.5rem; margin-bottom: 20px; }
+        .rec-instruction { color: #aaa; margin-bottom: 30px; font-size: 0.9rem; max-width: 80%; }
+        
+        .rec-btn {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: #333; border: 4px solid #555;
+            color: #fff; font-weight: bold; font-size: 1.2rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: all 0.2s; user-select: none;
+            -webkit-user-select: none; touch-action: manipulation;
+        }
+
+        .rec-btn.recording {
+            background: var(--rec-active); border-color: #fff;
+            box-shadow: 0 0 30px var(--rec-active); transform: scale(0.95);
+        }
+        
+        .rec-btn.ready {
+            background: var(--rec-ready); border-color: #fff; color: #000;
+            box-shadow: 0 0 20px var(--rec-ready);
+        }
+
+        .progress-bar {
+            width: 80%; height: 6px; background: #333; border-radius: 3px;
+            margin-top: 30px; overflow: hidden;
+        }
+        .progress-fill { height: 100%; background: var(--vfd-on); width: 0%; transition: width 0.3s; }
+
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <div class="unit" id="unit">
+        
+        <div class="rec-overlay" id="rec-interface">
+            <div class="rec-status" id="rec-prompt">INITIALIZING</div>
+            <div class="rec-instruction" id="rec-instruct">
+                Tap START to allow microphone access.<br>We need to record your voice for A-Z.
+            </div>
+            
+            <button class="rec-btn" id="btn-main">START</button>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="rec-progress"></div>
+            </div>
+            <div style="margin-top:10px; font-size:0.8rem; color:#666;" id="rec-count">0 / 26</div>
+            <div style="margin-top:20px; color: red; font-size: 0.8rem; display:none;" id="error-msg"></div>
+        </div>
+
+        <div class="handle"></div>
+        
+        <div class="top-section">
+            <div class="speaker-grill"></div>
+            <div class="display-window">
+                <div class="vfd-text" id="display">READY</div>
+            </div>
+        </div>
+
+        <div class="faceplate">
+            <div class="keypad">
+                <button class="key off" onclick="powerOff()">OFF</button>
+                <button class="key func">GO</button>
+                <button class="key func">REPLAY</button>
+                <button class="key func">REPEAT</button>
+                <button class="key func">CLUE</button>
+                <button class="key func">WORD</button>
+                <button class="key func">CODE</button>
+                <button class="key func">LETTER</button>
+                <button class="key func">MYSTERY</button>
+                <button class="key on" onclick="powerOn()">ON</button>
+            </div>
+            <div class="keypad">
+                <button class="key char" onclick="press('A')">A</button>
+                <button class="key char" onclick="press('B')">B</button>
+                <button class="key char" onclick="press('C')">C</button>
+                <button class="key char" onclick="press('D')">D</button>
+                <button class="key char" onclick="press('E')">E</button>
+                <button class="key char" onclick="press('F')">F</button>
+                <button class="key char" onclick="press('G')">G</button>
+                <button class="key char" onclick="press('H')">H</button>
+                <button class="key char" onclick="press('I')">I</button>
+                <button class="key char" onclick="press('J')">J</button>
+            </div>
+            <div class="keypad">
+                <button class="key char" onclick="press('K')">K</button>
+                <button class="key char" onclick="press('L')">L</button>
+                <button class="key char" onclick="press('M')">M</button>
+                <button class="key char" onclick="press('N')">N</button>
+                <button class="key char" onclick="press('O')">O</button>
+                <button class="key char" onclick="press('P')">P</button>
+                <button class="key char" onclick="press('Q')">Q</button>
+                <button class="key char" onclick="press('R')">R</button>
+                <button class="key char" onclick="press('S')">S</button>
+                <button class="key char" onclick="press('T')">T</button>
+            </div>
+            <div class="keypad">
+                <button class="key char" onclick="press('U')">U</button>
+                <button class="key char" onclick="press('V')">V</button>
+                <button class="key char" onclick="press('W')">W</button>
+                <button class="key char" onclick="press('X')">X</button>
+                <button class="key char" onclick="press('Y')">Y</button>
+                <button class="key char" onclick="press('Z')">Z</button>
+                <button class="key char" onclick="press('\'')">'</button>
+                <button class="key char" onclick="press('#')">#</button>
+                <button class="key char" onclick="erase()">ERASE</button>
+                <button class="key char" onclick="enter()">ENTER</button>
+            </div>
+
+            <div class="input-module">
+                <input type="text" id="custom-input" placeholder="TYPE HERE..." disabled>
+                <button id="btn-say" onclick="sayCustom()">SAY IT</button>
+            </div>
+
+            <div class="logo">Speak <span>& Spell</span></div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. GLOBAL STATE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ctx = null;
+        let isPowered = false;
+        let buffer = "";
+        
+        // The Sample Library
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+        const samples = {}; 
+        let currentRecIndex = 0;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isInitialized = false;
+
+        // --- 2. RECORDING LOGIC ---
+        const recOverlay = document.getElementById('rec-interface');
+        const mainBtn = document.getElementById('btn-main');
+        const recPrompt = document.getElementById('rec-prompt');
+        const recInstruct = document.getElementById('rec-instruct');
+        const recProgress = document.getElementById('rec-progress');
+        const recCount = document.getElementById('rec-count');
+        const errorMsg = document.getElementById('error-msg');
+
+        // Step 1: Initialize (Click/Tap)
+        mainBtn.addEventListener('click', async () => {
+            if(isInitialized) return; // Already initialized, ignore click
+            
+            if(!navigator.mediaDevices) {
+                showError("Your browser does not support Audio Recording (getUserMedia).");
+                return;
+            }
+
+            try {
+                // Initialize Audio Context
+                ctx = new AudioContext();
+                await ctx.resume();
+
+                // Request Mic
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                setupRecorderListeners();
+                
+                // Success! Switch to Recording Mode
+                isInitialized = true;
+                recInstruct.innerText = "Ready! HOLD the button, SAY the letter, then RELEASE.";
+                updateRecUI(); // This will change button text to "HOLD"
+                
+            } catch(err) {
+                showError("Microphone Access Denied. Please Check Settings. (HTTPS required)");
+                console.error(err);
+            }
+        });
+
+        // Step 2: Record (Touch/Mouse Down)
+        function setupRecorderListeners() {
+            // Mouse
+            mainBtn.addEventListener('mousedown', startRecording);
+            mainBtn.addEventListener('mouseup', stopRecording);
+            mainBtn.addEventListener('mouseleave', stopRecording);
+
+            // Touch (Passive false to allow preventing scroll if needed, 
+            // but we removed preventDefault to fix the click bug)
+            mainBtn.addEventListener('touchstart', (e) => {
+                if(!isInitialized) return; // Don't record on the init tap
+                startRecording();
+            });
+            mainBtn.addEventListener('touchend', (e) => {
+                if(!isInitialized) return;
+                stopRecording();
+            });
+
+            // Data handling
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                // Decode
+                try {
+                    const arrayBuffer = await audioBlob.arrayBuffer();
+                    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+                    
+                    // Save
+                    const char = alphabet[currentRecIndex];
+                    samples[char] = audioBuffer;
+                    
+                    // Advance
+                    currentRecIndex++;
+                    updateRecUI();
+                } catch(e) {
+                    console.error("Decoding error", e);
+                }
+            };
+        }
+
+        function startRecording() {
+            if(!isInitialized || !mediaRecorder || mediaRecorder.state === 'recording') return;
+            audioChunks = [];
+            mediaRecorder.start();
+            mainBtn.innerText = "REC";
+            mainBtn.classList.remove('ready');
+            mainBtn.classList.add('recording');
+            recPrompt.style.color = "#ff1744";
+        }
+
+        function stopRecording() {
+            if(!isInitialized || !mediaRecorder || mediaRecorder.state === 'inactive') return;
+            mediaRecorder.stop();
+            mainBtn.classList.remove('recording');
+            recPrompt.style.color = "var(--vfd-on)";
+        }
+
+        function updateRecUI() {
+            if(currentRecIndex >= alphabet.length) {
+                recOverlay.classList.add('hidden');
+                powerOn();
+                return;
+            }
+            
+            const char = alphabet[currentRecIndex];
+            recPrompt.innerText = `SAY "${char}"`;
+            mainBtn.innerText = "HOLD";
+            mainBtn.classList.add('ready'); // Turn Green
+            
+            const pct = (currentRecIndex / 26) * 100;
+            recProgress.style.width = pct + "%";
+            recCount.innerText = `${currentRecIndex} / 26`;
+        }
+
+        function showError(msg) {
+            errorMsg.innerText = msg;
+            errorMsg.style.display = 'block';
+            mainBtn.style.background = '#333';
+            mainBtn.innerText = "ERROR";
+        }
+
+        // --- 3. PLAYBACK LOGIC ---
+        function speak(text) {
+            if(!ctx) return;
+            const now = ctx.currentTime;
+            let timeOffset = 0;
+            const gap = 0.05; 
+
+            text.split('').forEach(char => {
+                const c = char.toUpperCase();
+                
+                if(samples[c]) {
+                    const src = ctx.createBufferSource();
+                    src.buffer = samples[c];
+                    src.connect(ctx.destination);
+                    src.start(now + timeOffset);
+                    timeOffset += src.buffer.duration + gap;
+                } else if(c === ' ') {
+                    timeOffset += 0.2; 
+                }
+            });
+        }
+
+
+        // --- 4. MAIN UNIT UI ---
+        const display = document.getElementById('display');
+        const unit = document.getElementById('unit');
+        const customInput = document.getElementById('custom-input');
+
+        function powerOn() {
+            isPowered = true;
+            unit.classList.add('powered-on');
+            display.innerText = "READY";
+            customInput.disabled = false;
+            buffer = "";
+        }
+
+        function powerOff() {
+            isPowered = false;
+            unit.classList.remove('powered-on');
+            display.innerText = "";
+            customInput.disabled = true;
+            if(ctx) ctx.suspend();
+        }
+
+        function press(char) {
+            if(!isPowered) return;
+            buffer += char;
+            updateDisplay(buffer);
+            speak(char); 
+        }
+
+        function erase() {
+            if(!isPowered) return;
+            buffer = buffer.slice(0, -1);
+            updateDisplay(buffer || "READY");
+        }
+
+        function enter() {
+            if(!isPowered) return;
+            speak(buffer);
+        }
+
+        function sayCustom() {
+            if(!isPowered) return;
+            const text = customInput.value.toUpperCase();
+            if(text) {
+                buffer = text;
+                updateDisplay(text);
+                speak(text);
+            }
+        }
+
+        function updateDisplay(text) {
+            if(text.length > 9) {
+                display.innerText = text.substring(text.length - 9);
+            } else {
+                display.innerText = text;
+            }
+        }
+
+    </script>
+</body>
+</html>
