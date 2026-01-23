@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoruba Workstation v5: Transceiver</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --text-color: #c9d1d9;
+            --classic-color: #ff7b72;   /* Red */
+            --organic-color: #3fb950;   /* Green */
+            --rx-color: #d2a8ff;        /* Purple for Receiver */
+            --border-color: #30363d;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 { margin: 0; color: #58a6ff; letter-spacing: 1px; }
+        h4 { margin: 5px 0 20px 0; color: #8b949e; font-weight: normal; }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .label {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* INPUT */
+        .input-group { position: relative; width: 100%; }
+        textarea {
+            width: 100%; height: 60px; background: #0d1117; color: #fff;
+            border: 1px solid var(--border-color); border-radius: 4px; padding: 10px;
+            font-family: var(--font-mono); resize: none; box-sizing: border-box;
+            padding-right: 40px;
+        }
+        .btn-mic {
+            position: absolute; right: 10px; top: 10px;
+            background: transparent; border: none; font-size: 1.2rem; cursor: pointer;
+        }
+        .btn-mic.listening { animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* CANVAS */
+        .canvas-container {
+            position: relative; height: 100px;
+            background: #000; border: 1px solid var(--border-color); border-radius: 4px;
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+        .playhead {
+            position: absolute; top: 0; bottom: 0; left: 0; width: 2px;
+            background: #fff; display: none; pointer-events: none;
+        }
+
+        /* CONTROLS */
+        .controls-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+        .params { display: flex; gap: 15px; }
+        .slider-group { display: flex; flex-direction: column; gap: 4px; min-width: 100px; }
+        label { font-size: 0.7rem; color: #8b949e; font-weight: bold; display: flex; justify-content: space-between; }
+        input[type=range] { width: 100%; cursor: pointer; }
+
+        .transport { display: flex; gap: 5px; }
+        button {
+            background: #21262d; border: 1px solid var(--border-color); color: #c9d1d9;
+            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1rem;
+        }
+        button:hover { background: #30363d; color: #fff; }
+        .btn-primary { background: #238636; color: #fff; border: none; font-size: 0.8rem; text-transform: uppercase; }
+        .btn-primary:hover { background: #2ea043; }
+
+        /* RECEIVER TERMINAL */
+        .terminal {
+            background: #000; color: var(--rx-color);
+            font-family: var(--font-mono); font-size: 0.9rem;
+            padding: 10px; border-radius: 4px; min-height: 40px;
+            border: 1px solid var(--border-color);
+            white-space: pre-wrap;
+        }
+        .cursor { display: inline-block; width: 8px; height: 14px; background: var(--rx-color); animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <h1>Yoruba Workstation v5</h1>
+    <h4>The Acoustic Transceiver Loop</h4>
+
+    <div class="container">
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="label" style="color:var(--organic-color)">
+                    <div class="dot" style="background:var(--organic-color)"></div>
+                    Transmitter (Input)
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <textarea id="tx-input" placeholder="Type or speak message...">The Yoruba Logic Encoder</textarea>
+                <button id="btn-mic" class="btn-mic">🎤</button>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="tx-canvas"></canvas>
+                <div id="tx-playhead" class="playhead"></div>
+            </div>
+
+            <div class="controls-row">
+                <div class="params">
+                    <div class="slider-group">
+                        <label>Speed (ms) <span id="disp-speed">100</span></label>
+                        <input type="range" id="param-speed" min="20" max="300" value="100">
+                    </div>
+                    <div class="slider-group">
+                        <label>Glide (%) <span id="disp-glide">30%</span></label>
+                        <input type="range" id="param-glide" min="0" max="100" value="30">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="transmit()">📡 Transmit Burst</button>
+            </div>
+        </div>
+
+        <div class="panel" style="border-color: var(--rx-color);">
+            <div class="panel-header">
+                <div class="label" style="color:var(--rx-color)">
+                    <div class="dot" style="background:var(--rx-color)"></div>
+                    Receiver (Decoder)
+                </div>
+                <div style="font-size:0.7rem; color:#8b949e;" id="rx-status">WAITING FOR SIGNAL...</div>
+            </div>
+
+            <div class="terminal" id="rx-terminal"><span class="cursor"></span></div>
+
+            <div class="controls-row">
+                <div class="params">
+                    <div class="slider-group">
+                        <label style="color:var(--rx-color)">Persona Pitch <span id="disp-pitch">1.0</span></label>
+                        <input type="range" id="param-pitch" min="0.5" max="2.0" step="0.1" value="1.0">
+                    </div>
+                    <div class="slider-group">
+                        <label style="color:var(--rx-color)">Rate <span id="disp-rate">1.0</span></label>
+                        <input type="range" id="param-rate" min="0.5" max="2.0" step="0.1" value="1.0">
+                    </div>
+                </div>
+                <button onclick="speakDecoded()">🔊 Replay Speech</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- LOGIC ---
+        class YorubaEncoder {
+            encodeChar(char) {
+                const val = char.charCodeAt(0);
+                const anchorIdx = Math.ceil(val / 20);
+                const anchorVal = anchorIdx * 20;
+                let currentBase = anchorVal;
+                let diff = val - currentBase;
+                if (Math.abs(val - (anchorVal - 10)) < Math.abs(diff)) currentBase = anchorVal - 10;
+                diff = val - currentBase;
+                const offset = Math.abs(diff);
+                const anchorBit = (anchorIdx - 1) & 0b111;
+                const byte = (anchorBit << 5) | offset;
+                return 150 + (byte * 2.5) + (diff * 5); 
+            }
+            encode(text) { return text.split('').map(c => this.encodeChar(c)); }
+        }
+
+        const encoder = new YorubaEncoder();
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        
+        // UI Binds
+        const txInput = document.getElementById('tx-input');
+        const rxTerminal = document.getElementById('rx-terminal');
+        const rxStatus = document.getElementById('rx-status');
+        
+        // --- TRANSMIT LOGIC ---
+        async function transmit() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const text = txInput.value;
+            const freqs = encoder.encode(text);
+            const speed = parseInt(document.getElementById('param-speed').value);
+            const glide = parseInt(document.getElementById('param-glide').value) / 100;
+
+            // 1. Play Audio (The Chirp)
+            playChirp(freqs, speed, glide);
+            
+            // 2. Simulate Transmission Delay & Decoding
+            rxStatus.innerText = "RECEIVING SIGNAL...";
+            rxTerminal.innerHTML = '<span class="cursor"></span>';
+            
+            const totalTime = freqs.length * speed;
+            
+            // Wait for "transmission" to finish
+            await new Promise(r => setTimeout(r, totalTime));
+            
+            rxStatus.innerText = "DECODING...";
+            
+            // Decode Animation
+            let decodedText = "";
+            for (let i = 0; i < text.length; i++) {
+                await new Promise(r => setTimeout(r, 50)); // Processing time per char
+                decodedText += text[i];
+                rxTerminal.innerHTML = decodedText + '<span class="cursor"></span>';
+            }
+            
+            rxStatus.innerText = "SIGNAL DECODED.";
+            
+            // Auto-Speak
+            setTimeout(() => speakDecoded(decodedText), 500);
+        }
+
+        // --- SYNTHESIS (THE CHIRP) ---
+        function playChirp(freqs, speed, glidePct) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            const step = speed / 1000;
+            const glideTime = step * glidePct;
+
+            freqs.forEach((f, i) => {
+                const t = now + (i * step);
+                if (i === 0) osc.frequency.setValueAtTime(f, t);
+                else osc.frequency.linearRampToValueAtTime(f, t + glideTime);
+                
+                // Simple Envelope
+                gain.gain.setValueAtTime(0.5, t);
+                gain.gain.linearRampToValueAtTime(0.5, t + step - 0.01);
+            });
+            
+            gain.gain.linearRampToValueAtTime(0, now + (freqs.length * step));
+            osc.start(now);
+            osc.stop(now + (freqs.length * step) + 0.1);
+            
+            animateTx(freqs, speed);
+        }
+
+        // --- SPEECH RECONSTRUCTION ---
+        function speakDecoded(textToSpeak) {
+            const text = textToSpeak || rxTerminal.innerText;
+            if (!text) return;
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Apply Persona params
+            const pitch = parseFloat(document.getElementById('param-pitch').value);
+            const rate = parseFloat(document.getElementById('param-rate').value);
+            
+            utterance.pitch = pitch;
+            utterance.rate = rate;
+            
+            // Try to find a good voice
+            const voices = window.speechSynthesis.getVoices();
+            const preferred = voices.find(v => v.lang === 'en-US' && v.name.includes('Google')) || voices[0];
+            if (preferred) utterance.voice = preferred;
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // --- VISUALS ---
+        function animateTx(freqs, speed) {
+            const canvas = document.getElementById('tx-canvas');
+            const playhead = document.getElementById('tx-playhead');
+            const duration = freqs.length * speed;
+            const start = performance.now();
+            
+            playhead.style.display = 'block';
+            
+            function loop() {
+                const elapsed = performance.now() - start;
+                const prog = Math.min(elapsed / duration, 1);
+                playhead.style.left = (prog * canvas.width) + 'px';
+                if (prog < 1) requestAnimationFrame(loop);
+                else playhead.style.display = 'none';
+            }
+            loop();
+            drawGraph(freqs);
+        }
+
+        function drawGraph(freqs) {
+            const canvas = document.getElementById('tx-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = 100;
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            const step = w / freqs.length;
+            
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
+            ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 2; ctx.beginPath();
+            
+            const min = 100, max = 600;
+            freqs.forEach((f, i) => {
+                const x = (i * step) + (step/2);
+                const y = h - ((f - min) / (max - min) * h);
+                if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            });
+            ctx.stroke();
+        }
+
+        // --- MIC INPUT ---
+        const micBtn = document.getElementById('btn-mic');
+        if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const rec = new SpeechRec();
+            rec.lang = 'en-US';
+            micBtn.onclick = () => rec.start();
+            rec.onstart = () => micBtn.classList.add('listening');
+            rec.onend = () => micBtn.classList.remove('listening');
+            rec.onresult = (e) => {
+                txInput.value = e.results[0][0].transcript;
+                drawGraph(encoder.encode(txInput.value));
+            };
+        } else {
+            micBtn.style.display = 'none';
+        }
+
+        // --- INIT ---
+        txInput.oninput = () => drawGraph(encoder.encode(txInput.value));
+        window.onresize = () => drawGraph(encoder.encode(txInput.value));
+        setTimeout(() => drawGraph(encoder.encode(txInput.value)), 100);
+
+        // Load voices
+        window.speechSynthesis.onvoiceschanged = () => {};
+
+    </script>
+</body>
+</html>
