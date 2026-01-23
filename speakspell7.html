@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Speak & Spell: Speed Control</title>
+    <style>
+        :root {
+            --case-red: #d32f2f;
+            --face-yellow: #fdd835;
+            --key-orange: #f57c00;
+            --key-blue: #1976d2;
+            --vfd-off: #202820;
+            --vfd-on: #00ffca;
+            --rec-active: #ff1744;
+            --rec-ready: #00e676;
+            --plastic-shadow: inset 0 -4px 4px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* --- UNIT --- */
+        .unit {
+            background-color: var(--case-red);
+            width: 95%; max-width: 400px; aspect-ratio: 3/5.8; /* Taller for slider */
+            border-radius: 20px; padding: 15px; position: relative;
+            box-shadow: var(--plastic-shadow); display: flex; flex-direction: column;
+            align-items: center; box-sizing: border-box;
+        }
+
+        .handle {
+            width: 50%; height: 5%; background: #1a1a1a;
+            border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
+        }
+
+        .top-section {
+            width: 100%; height: 15%; background: #111; border-radius: 10px 10px 0 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 10px; box-sizing: border-box; border-bottom: 4px solid #000;
+        }
+
+        .speaker-grill {
+            width: 100%; height: 20px;
+            background-image: radial-gradient(#333 20%, transparent 20%);
+            background-size: 4px 4px; opacity: 0.5;
+        }
+
+        .display-window {
+            background: #000; width: 100%; height: 60%;
+            border: 2px solid #333; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        .vfd-text {
+            font-family: 'Courier New', monospace; font-size: clamp(1rem, 6vw, 2.5rem);
+            color: var(--vfd-off); text-transform: uppercase; letter-spacing: 2px;
+            font-weight: bold; white-space: nowrap;
+        }
+
+        .unit.powered-on .vfd-text {
+            color: var(--vfd-on);
+            text-shadow: 0 0 5px var(--vfd-on), 0 0 10px var(--vfd-on);
+        }
+
+        .faceplate {
+            background-color: var(--face-yellow); width: 100%; flex: 1;
+            border-radius: 0 0 15px 15px; padding: 10px; box-sizing: border-box;
+            display: flex; flex-direction: column; border: 4px solid #c62828;
+        }
+
+        /* --- KEYPAD --- */
+        .keypad {
+            display: grid; grid-template-columns: repeat(10, 1fr);
+            gap: 1.5%; width: 100%; margin-bottom: 1.5%;
+        }
+
+        .key {
+            aspect-ratio: 1; background: #d32f2f; border-radius: 3px; border: none;
+            color: #fff; font-weight: bold; font-size: clamp(0.5rem, 2.5vw, 1rem);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 1px 1px 0px rgba(0,0,0,0.3); cursor: pointer; padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .key:active { transform: translate(1px, 1px); box-shadow: none; }
+        .key.func { background: var(--key-blue); font-size: clamp(0.3rem, 1.8vw, 0.6rem); line-height: 1; }
+        .key.char { background: var(--key-orange); color: #000; }
+        .key.on { background: var(--key-orange); color: #000; border: 2px solid #fff; } 
+        .key.off { background: var(--key-orange); color: #000; }
+
+        /* --- INPUT & SPEED MODULE --- */
+        .input-module {
+            margin-top: auto; width: 100%; display: flex; gap: 8px;
+            background: #c62828; padding: 8px; border-radius: 6px; box-sizing: border-box;
+            flex-direction: column;
+        }
+
+        .input-row { display: flex; gap: 5px; width: 100%; }
+
+        #custom-input {
+            flex: 1; background: #fff; border: 2px solid #000;
+            font-family: 'Courier New', monospace; text-transform: uppercase;
+            padding: 8px; font-weight: bold; font-size: 1rem; border-radius: 4px;
+        }
+
+        #btn-action {
+            background: var(--key-blue); color: #fff; border: 2px solid #000;
+            font-weight: bold; border-radius: 4px; padding: 0 15px;
+            cursor: pointer; text-transform: uppercase; min-width: 80px;
+        }
+
+        .slider-row {
+            display: flex; align-items: center; justify-content: space-between;
+            color: #fff; font-family: monospace; font-size: 0.8rem; font-weight: bold;
+        }
+
+        input[type=range] {
+            flex: 1; margin: 0 10px; accent-color: var(--key-blue); cursor: pointer;
+        }
+
+        .logo {
+            font-family: 'Georgia', serif; font-style: italic; font-size: clamp(1rem, 4vw, 1.2rem);
+            color: #d32f2f; margin-top: 10px; text-align: center; font-weight: bold;
+        }
+        .logo span { color: #1565c0; }
+
+        /* --- SETUP OVERLAY --- */
+        .rec-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.96); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 20px; color: #fff; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        .rec-btn {
+            width: 100px; height: 100px; border-radius: 50%;
+            background: #333; border: 4px solid #555; color: #fff; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .rec-btn.recording { background: var(--rec-active); border-color: #fff; transform: scale(0.95); }
+        .rec-btn.ready { background: var(--rec-ready); color: #000; border-color: #fff; }
+
+        .pho-guide { font-size: 0.9rem; color: #aaa; margin-top: 10px; background: #222; padding: 10px; border-radius: 8px;}
+        .pho-example { color: var(--vfd-on); font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="unit" id="unit">
+        
+        <div class="rec-overlay" id="rec-interface">
+            <div style="color:var(--vfd-on); font-family:monospace; margin-bottom:10px; font-size:1.5rem;" id="rec-title">PHONEME LAB</div>
+            <div style="color:#aaa; font-size:0.9rem; margin-bottom:20px;">
+                Record the 39 sounds of English.<br>We will stitch them to make ANY word.
+            </div>
+            
+            <button class="rec-btn" id="btn-rec">START</button>
+            
+            <div class="pho-guide" id="rec-guide">
+                Say: <span class="pho-example">AA</span> as in <span class="pho-example">BAT</span>
+            </div>
+
+            <div style="width:80%; height:6px; background:#333; border-radius:3px; margin-top:20px;">
+                <div style="height:100%; background:var(--vfd-on); width:0%; transition:width 0.2s;" id="rec-progress"></div>
+            </div>
+            <div style="margin-top:10px; font-size:0.8rem;" id="rec-count">0 / 39</div>
+        </div>
+
+        <div class="handle"></div>
+        <div class="top-section">
+            <div class="speaker-grill"></div>
+            <div class="display-window"><div class="vfd-text" id="display">READY</div></div>
+        </div>
+
+        <div class="faceplate">
+            <div class="keypad">
+                <button class="key off" onclick="powerOff()">OFF</button>
+                <button class="key func">GO</button>
+                <button class="key func">REPLAY</button>
+                <button class="key func">REPEAT</button>
+                <button class="key func">CLUE</button>
+                <button class="key func">WORD</button>
+                <button class="key func">CODE</button>
+                <button class="key func">LETTER</button>
+                <button class="key func">MYSTERY</button>
+                <button class="key on" onclick="powerOn()">ON</button>
+            </div>
+            <div class="keypad" id="kbd-container"></div>
+            
+            <div class="input-module">
+                <div class="input-row">
+                    <input type="text" id="custom-input" placeholder="TYPE HERE..." disabled>
+                    <button id="btn-action" onclick="sayInput()">SPEAK</button>
+                </div>
+                <div class="slider-row">
+                    <span>SPEED:</span>
+                    <input type="range" id="param-speed" min="0.5" max="2.0" step="0.1" value="1.0" disabled>
+                    <span id="speed-val">1.0x</span>
+                </div>
+            </div>
+
+            <div class="logo">Speak <span>& Spell</span></div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. PHONEME DATABASE ---
+        const phonemes = [
+            { id: "AA", ex: "BAT" }, { id: "AE", ex: "BET" }, { id: "AH", ex: "BUT" }, 
+            { id: "AO", ex: "BOUGHT" }, { id: "AW", ex: "COW" }, { id: "AY", ex: "BUY" }, 
+            { id: "EH", ex: "EGG" }, { id: "ER", ex: "BIRD" }, { id: "EY", ex: "BAY" }, 
+            { id: "IH", ex: "BIT" }, { id: "IY", ex: "BEET" }, { id: "OW", ex: "BOAT" }, 
+            { id: "OY", ex: "BOY" }, { id: "UH", ex: "BOOK" }, { id: "UW", ex: "BOOT" },
+            { id: "B", ex: "BOY" }, { id: "CH", ex: "CHIP" }, { id: "D", ex: "DOG" }, 
+            { id: "DH", ex: "THEY" }, { id: "F", ex: "FOX" }, { id: "G", ex: "GO" }, 
+            { id: "HH", ex: "HAT" }, { id: "JH", ex: "JET" }, { id: "K", ex: "CAT" }, 
+            { id: "L", ex: "LIP" }, { id: "M", ex: "MAN" }, { id: "N", ex: "NO" }, 
+            { id: "NG", ex: "SING" }, { id: "P", ex: "PEN" }, { id: "R", ex: "RED" }, 
+            { id: "S", ex: "SIT" }, { id: "SH", ex: "SHE" }, { id: "T", ex: "TOP" }, 
+            { id: "TH", ex: "THIN" }, { id: "V", ex: "VAN" }, { id: "W", ex: "WET" }, 
+            { id: "Y", ex: "YES" }, { id: "Z", ex: "ZOO" }, { id: "ZH", ex: "VISION" }
+        ];
+
+        const dictionary = {
+            "HELLO": ["HH", "AH", "L", "OW"],
+            "WORLD": ["W", "ER", "L", "D"],
+            "SPEAK": ["S", "P", "IY", "K"],
+            "SPELL": ["S", "P", "EH", "L"],
+            "COMPUTER": ["K", "AH", "M", "P", "Y", "UW", "T", "ER"],
+            "ROBOT": ["R", "OW", "B", "AA", "T"],
+            "READY": ["R", "EH", "D", "IY"],
+            "SYSTEM": ["S", "IH", "S", "T", "AH", "M"]
+        };
+
+        // --- 2. AUDIO SYSTEM ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ctx = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        const samples = {};
+        let recIndex = 0;
+        let isInitialized = false;
+        let isPowered = false;
+
+        // --- 3. UI GENERATION ---
+        const kbdContainer = document.getElementById('kbd-container');
+        const keys = [
+            "A","B","C","D","E","F","G","H","I","J",
+            "K","L","M","N","O","P","Q","R","S","T",
+            "U","V","W","X","Y","Z","'", "#", "ERASE", "ENTER"
+        ];
+        let gridHtml = "";
+        keys.forEach((k, i) => {
+            if(i%10 === 0 && i !== 0) gridHtml += `</div><div class="keypad">`;
+            if(i===0) gridHtml += `<div class="keypad">`;
+            let fn = `press('${k}')`;
+            if(k === "ERASE") fn = "erase()";
+            if(k === "ENTER") fn = "enter()";
+            gridHtml += `<button class="key char" onclick="${fn}">${k}</button>`;
+        });
+        gridHtml += `</div>`;
+        const inputMod = document.querySelector('.input-module');
+        inputMod.insertAdjacentHTML('beforebegin', gridHtml);
+
+
+        // --- 4. RECORDING LOGIC ---
+        const btnRec = document.getElementById('btn-rec');
+        const recTitle = document.getElementById('rec-title');
+        const recGuide = document.getElementById('rec-guide');
+        const recProgress = document.getElementById('rec-progress');
+        const recCount = document.getElementById('rec-count');
+        const recInterface = document.getElementById('rec-interface');
+
+        btnRec.addEventListener('click', async () => {
+            if(isInitialized) return;
+            try {
+                ctx = new AudioContext();
+                await ctx.resume();
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                setupRecorderListeners();
+                isInitialized = true;
+                updateRecUI();
+            } catch(e) {
+                alert("Mic Error: " + e.message);
+            }
+        });
+
+        function setupRecorderListeners() {
+            const start = (e) => { e.preventDefault(); startRecording(); };
+            const stop = (e) => { e.preventDefault(); stopRecording(); };
+
+            btnRec.addEventListener('mousedown', start);
+            btnRec.addEventListener('mouseup', stop);
+            btnRec.addEventListener('touchstart', start);
+            btnRec.addEventListener('touchend', stop);
+            btnRec.addEventListener('mouseleave', stop);
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const buf = await blob.arrayBuffer();
+                const audio = await ctx.decodeAudioData(buf);
+                const p = phonemes[recIndex];
+                samples[p.id] = audio;
+                recIndex++;
+                updateRecUI();
+            };
+        }
+
+        function startRecording() {
+            if(!isInitialized || mediaRecorder.state === 'recording') return;
+            audioChunks = [];
+            mediaRecorder.start();
+            btnRec.classList.add('recording');
+            btnRec.classList.remove('ready');
+            btnRec.innerText = "REC";
+        }
+
+        function stopRecording() {
+            if(!isInitialized || mediaRecorder.state !== 'recording') return;
+            mediaRecorder.stop();
+            btnRec.classList.remove('recording');
+        }
+
+        function updateRecUI() {
+            if(recIndex >= phonemes.length) {
+                recInterface.style.display = 'none';
+                powerOn();
+                return;
+            }
+            const p = phonemes[recIndex];
+            recTitle.innerText = `SAY "${p.id}"`;
+            recGuide.innerHTML = `As in <span class="pho-example">${p.ex}</span>`;
+            btnRec.innerText = "HOLD";
+            btnRec.classList.add('ready');
+            const pct = (recIndex / phonemes.length) * 100;
+            recProgress.style.width = pct + "%";
+            recCount.innerText = `${recIndex} / ${phonemes.length}`;
+        }
+
+
+        // --- 5. PLAYBACK ENGINE (WITH SPEED) ---
+        const speedSlider = document.getElementById('param-speed');
+        const speedVal = document.getElementById('speed-val');
+        
+        speedSlider.oninput = (e) => {
+            speedVal.innerText = e.target.value + "x";
+        };
+
+        function sayInput() {
+            const text = document.getElementById('custom-input').value.toUpperCase().trim();
+            if(!text) return;
+            
+            if(dictionary[text]) {
+                speakPhonemes(dictionary[text]);
+                return;
+            }
+
+            const phos = [];
+            text.split('').forEach(char => {
+                if(char === 'A') phos.push("AE");
+                else if(char === 'E') phos.push("EH");
+                else if(char === 'I') phos.push("IH");
+                else if(char === 'O') phos.push("AA");
+                else if(char === 'U') phos.push("AH");
+                else if(char === 'C') phos.push("K");
+                else if(char === 'J') phos.push("JH");
+                else if(char === 'Q') phos.push("K");
+                else if(char === 'X') { phos.push("K"); phos.push("S"); }
+                else if(samples[char]) phos.push(char); 
+            });
+            speakPhonemes(phos);
+        }
+
+        function speakPhonemes(phoList) {
+            if(!ctx) return;
+            const now = ctx.currentTime;
+            let time = now;
+            
+            // GET SPEED
+            const rate = parseFloat(speedSlider.value);
+            
+            // Adjust overlap based on speed (faster = tighter)
+            const overlap = 0.05 / rate; 
+
+            phoList.forEach(pid => {
+                if(samples[pid]) {
+                    const src = ctx.createBufferSource();
+                    src.buffer = samples[pid];
+                    
+                    // APPLY SPEED
+                    src.playbackRate.value = rate;
+                    
+                    const gain = ctx.createGain();
+                    src.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    src.start(time);
+                    
+                    // The duration is shrunken by the rate
+                    const realDur = src.buffer.duration / rate;
+
+                    // Envelope needs to match the new speed
+                    gain.gain.setValueAtTime(0, time);
+                    gain.gain.linearRampToValueAtTime(1, time + (0.02/rate));
+                    gain.gain.setValueAtTime(1, time + realDur - (0.02/rate));
+                    gain.gain.linearRampToValueAtTime(0, time + realDur);
+                    
+                    time += (realDur - overlap);
+                }
+            });
+        }
+
+
+        // --- 6. UNIT STATE ---
+        const display = document.getElementById('display');
+        const customInput = document.getElementById('custom-input');
+        let buffer = "";
+
+        function powerOn() {
+            isPowered = true;
+            document.getElementById('unit').classList.add('powered-on');
+            display.innerText = "READY";
+            customInput.disabled = false;
+            speedSlider.disabled = false;
+        }
+
+        function powerOff() {
+            isPowered = false;
+            document.getElementById('unit').classList.remove('powered-on');
+            display.innerText = "";
+            customInput.disabled = true;
+            speedSlider.disabled = true;
+            if(ctx) ctx.suspend();
+        }
+
+        function press(char) {
+            if(!isPowered) return;
+            buffer += char;
+            customInput.value = buffer;
+            display.innerText = buffer.slice(-9);
+            // Quick feedback
+            let p = char;
+            if(char==='A') p="AE"; if(char==='E') p="EH"; if(char==='I') p="IH";
+            if(samples[p]) speakPhonemes([p]);
+        }
+
+        function erase() {
+            if(!isPowered) return;
+            buffer = buffer.slice(0, -1);
+            customInput.value = buffer;
+            display.innerText = buffer || "READY";
+        }
+
+        function enter() {
+            if(!isPowered) return;
+            sayInput();
+        }
+
+    </script>
+</body>
+</html>
