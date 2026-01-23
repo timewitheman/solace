@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Speak & Spell: Zip Loader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --case-red: #d32f2f;
+            --face-yellow: #fdd835;
+            --key-orange: #f57c00;
+            --key-blue: #1976d2;
+            --vfd-off: #202820;
+            --vfd-on: #00ffca;
+            --rec-active: #ff1744;
+            --rec-ready: #00e676;
+            --control-bg: rgba(0,0,0,0.3);
+            --plastic-shadow: inset 0 -4px 4px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* --- UNIT --- */
+        .unit {
+            background-color: var(--case-red);
+            width: 95%; max-width: 400px; aspect-ratio: 3/6.2;
+            border-radius: 20px; padding: 15px; position: relative;
+            box-shadow: var(--plastic-shadow); display: flex; flex-direction: column;
+            align-items: center; box-sizing: border-box;
+        }
+
+        .handle {
+            width: 50%; height: 4%; background: #1a1a1a;
+            border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
+        }
+
+        .top-section {
+            width: 100%; height: 14%; background: #111; border-radius: 10px 10px 0 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 10px; box-sizing: border-box; border-bottom: 4px solid #000;
+        }
+
+        .speaker-grill {
+            width: 100%; height: 20px;
+            background-image: radial-gradient(#333 20%, transparent 20%);
+            background-size: 4px 4px; opacity: 0.5;
+        }
+
+        .display-window {
+            background: #000; width: 100%; height: 60%;
+            border: 2px solid #333; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        .vfd-text {
+            font-family: 'Courier New', monospace; font-size: clamp(1rem, 6vw, 2.5rem);
+            color: var(--vfd-off); text-transform: uppercase; letter-spacing: 2px;
+            font-weight: bold; white-space: nowrap;
+        }
+
+        .unit.powered-on .vfd-text {
+            color: var(--vfd-on);
+            text-shadow: 0 0 5px var(--vfd-on), 0 0 10px var(--vfd-on);
+        }
+
+        .faceplate {
+            background-color: var(--face-yellow); width: 100%; flex: 1;
+            border-radius: 0 0 15px 15px; padding: 10px; box-sizing: border-box;
+            display: flex; flex-direction: column; border: 4px solid #c62828;
+        }
+
+        /* --- KEYPAD --- */
+        .keypad {
+            display: grid; grid-template-columns: repeat(10, 1fr);
+            gap: 1.5%; width: 100%; margin-bottom: 1.5%;
+        }
+
+        .key {
+            aspect-ratio: 1; background: #d32f2f; border-radius: 3px; border: none;
+            color: #fff; font-weight: bold; font-size: clamp(0.5rem, 2.5vw, 1rem);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 1px 1px 0px rgba(0,0,0,0.3); cursor: pointer; padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .key:active { transform: translate(1px, 1px); box-shadow: none; }
+        .key.func { background: var(--key-blue); font-size: clamp(0.3rem, 1.8vw, 0.6rem); line-height: 1; }
+        .key.char { background: var(--key-orange); color: #000; }
+        .key.on { background: var(--key-orange); color: #000; border: 2px solid #fff; } 
+        .key.off { background: var(--key-orange); color: #000; }
+
+        /* --- CONTROL MODULE --- */
+        .input-module {
+            margin-top: auto; width: 100%; display: flex; gap: 6px;
+            background: #c62828; padding: 8px; border-radius: 6px; box-sizing: border-box;
+            flex-direction: column;
+        }
+
+        .input-row { display: flex; gap: 5px; width: 100%; }
+
+        #custom-input {
+            flex: 1; background: #fff; border: 2px solid #000;
+            font-family: 'Courier New', monospace; text-transform: uppercase;
+            padding: 8px; font-weight: bold; font-size: 1rem; border-radius: 4px;
+        }
+
+        #btn-action {
+            background: var(--key-blue); color: #fff; border: 2px solid #000;
+            font-weight: bold; border-radius: 4px; padding: 0 15px;
+            cursor: pointer; text-transform: uppercase; min-width: 80px;
+        }
+
+        /* Sliders */
+        .control-group {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+
+        .slider-row {
+            display: flex; flex-direction: column; 
+            color: #fff; font-family: monospace; font-size: 0.7rem; font-weight: bold;
+            background: var(--control-bg); padding: 5px; border-radius: 4px;
+        }
+        
+        .slider-label { display: flex; justify-content: space-between; margin-bottom: 2px; }
+
+        input[type=range] {
+            width: 100%; margin: 0; accent-color: var(--key-blue); cursor: pointer; height: 10px;
+        }
+
+        .logo {
+            font-family: 'Georgia', serif; font-style: italic; font-size: clamp(1rem, 4vw, 1.2rem);
+            color: #d32f2f; margin-top: 10px; text-align: center; font-weight: bold;
+        }
+        .logo span { color: #1565c0; }
+
+        /* --- SETUP OVERLAY --- */
+        .rec-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.96); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 20px; color: #fff; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+
+        .setup-options {
+            display: flex; gap: 20px; margin-top: 20px;
+        }
+
+        .choice-btn {
+            background: #333; border: 2px solid #555; color: #fff;
+            padding: 15px 25px; border-radius: 10px; cursor: pointer;
+            font-weight: bold; font-size: 1rem; text-transform: uppercase;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            width: 140px;
+        }
+        .choice-btn:hover { background: #444; border-color: var(--vfd-on); }
+        .choice-btn span { font-size: 2rem; }
+
+        /* Recorder Specifics */
+        .rec-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #333; border: 4px solid #555; color: #fff; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .rec-circle.recording { background: var(--rec-active); border-color: #fff; transform: scale(0.95); }
+        .rec-circle.ready { background: var(--rec-ready); color: #000; border-color: #fff; }
+
+        .hidden { display: none !important; }
+
+        #file-input { display: none; }
+
+    </style>
+</head>
+<body>
+
+    <div class="unit" id="unit">
+        
+        <div class="rec-overlay" id="setup-interface">
+            <div style="color:var(--vfd-on); font-family:monospace; margin-bottom:10px; font-size:1.5rem;" id="setup-title">PHONEME LAB</div>
+            <div style="color:#aaa; font-size:0.9rem; margin-bottom:20px; max-width:80%;" id="setup-desc">
+                Load voice data to begin.
+            </div>
+
+            <div class="setup-options" id="setup-menu">
+                <button class="choice-btn" onclick="startMicMode()">
+                    <span>🎙️</span>
+                    Record Mic
+                </button>
+                <button class="choice-btn" onclick="document.getElementById('file-input').click()">
+                    <span>📁</span>
+                    Upload Zip
+                </button>
+                <input type="file" id="file-input" accept=".zip" onchange="handleZipUpload(this)">
+            </div>
+
+            <div id="mic-ui" class="hidden" style="display:flex; flex-direction:column; align-items:center; width:100%;">
+                <div class="rec-circle" id="btn-rec">START</div>
+                <div style="font-size:0.9rem; color:#aaa; margin-top:10px; background:#222; padding:10px; border-radius:8px;" id="rec-guide">
+                    Say: <span style="color:var(--vfd-on); font-weight:bold;">AA</span>
+                </div>
+                <div style="width:80%; height:6px; background:#333; border-radius:3px; margin-top:20px;">
+                    <div style="height:100%; background:var(--vfd-on); width:0%; transition:width 0.2s;" id="rec-progress"></div>
+                </div>
+                <div style="margin-top:10px; font-size:0.8rem;" id="rec-count">0 / 40</div>
+            </div>
+
+            <div style="margin-top:20px; color:var(--vfd-on); font-size:0.8rem;" id="status-msg"></div>
+        </div>
+
+        <div class="handle"></div>
+        <div class="top-section">
+            <div class="speaker-grill"></div>
+            <div class="display-window"><div class="vfd-text" id="display">READY</div></div>
+        </div>
+
+        <div class="faceplate">
+            <div class="keypad">
+                <button class="key off" onclick="powerOff()">OFF</button>
+                <button class="key func">GO</button>
+                <button class="key func">REPLAY</button>
+                <button class="key func">REPEAT</button>
+                <button class="key func">CLUE</button>
+                <button class="key func">WORD</button>
+                <button class="key func">CODE</button>
+                <button class="key func">LETTER</button>
+                <button class="key func">MYSTERY</button>
+                <button class="key on" onclick="powerOn()">ON</button>
+            </div>
+            <div class="keypad" id="kbd-container"></div>
+            
+            <div class="input-module">
+                <div class="input-row">
+                    <input type="text" id="custom-input" placeholder="TYPE HERE..." disabled>
+                    <button id="btn-action" onclick="sayInput()">SPEAK</button>
+                </div>
+                
+                <div class="control-group">
+                    <div class="slider-row">
+                        <div class="slider-label"><span>TRIM</span><span id="val-trim">20ms</span></div>
+                        <input type="range" id="param-trim" min="0" max="200" value="20" disabled>
+                    </div>
+                    <div class="slider-row">
+                        <div class="slider-label"><span>FLOW</span><span id="val-flow">50ms</span></div>
+                        <input type="range" id="param-flow" min="0" max="200" value="50" disabled>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <div class="slider-row">
+                        <div class="slider-label"><span>SPEED</span><span id="val-speed">1.0x</span></div>
+                        <input type="range" id="param-speed" min="0.5" max="2.0" step="0.1" value="1.0" disabled>
+                    </div>
+                    <div class="slider-row" style="background: #3e2723;">
+                        <div class="slider-label" style="color: #ffcc80;"><span>VINTAGE</span><span id="val-crush">0%</span></div>
+                        <input type="range" id="param-crush" min="0" max="100" value="0" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <div class="logo">Speak <span>& Spell</span></div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. EXPANDED PHONEME LIST (Based on User Files) ---
+        // Matches typical CMU/Arpabet filenames
+        const phonemeKeys = [
+            "AA", "AE", "AH", "AO", "AW", "AX", "AY", "B", "CH", "D", "DH", "DX", 
+            "EH", "ER", "EY", "F", "G", "HH", "IH", "IX", "IY", "J", "K", "L", "LX", 
+            "M", "N", "NG", "NX", "OH", "OW", "OY", "P", "Q", "R", "RX", "S", "SH", 
+            "T", "TH", "UH", "UL", "UM", "UN", "UW", "UX", "V", "W", "WH", "Y", "YX", "Z", "ZH"
+        ];
+
+        // --- 2. AUDIO SYSTEM ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let ctx = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        const samples = {};
+        let recIndex = 0;
+        let isInitialized = false;
+        let isPowered = false;
+
+        // --- 3. UI GENERATION ---
+        const kbdContainer = document.getElementById('kbd-container');
+        const keys = [
+            "A","B","C","D","E","F","G","H","I","J",
+            "K","L","M","N","O","P","Q","R","S","T",
+            "U","V","W","X","Y","Z","'", "#", "ERASE", "ENTER"
+        ];
+        let gridHtml = "";
+        keys.forEach((k, i) => {
+            if(i%10 === 0 && i !== 0) gridHtml += `</div><div class="keypad">`;
+            if(i===0) gridHtml += `<div class="keypad">`;
+            let fn = `press('${k}')`;
+            if(k === "ERASE") fn = "erase()";
+            if(k === "ENTER") fn = "enter()";
+            gridHtml += `<button class="key char" onclick="${fn}">${k}</button>`;
+        });
+        gridHtml += `</div>`;
+        const inputMod = document.querySelector('.input-module');
+        inputMod.insertAdjacentHTML('beforebegin', gridHtml);
+
+        // --- 4. ZIP UPLOAD LOGIC ---
+        function handleZipUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Init Audio Context if needed
+            if(!ctx) ctx = new AudioContext();
+            ctx.resume();
+
+            const status = document.getElementById('status-msg');
+            status.innerText = "Reading Zip...";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                status.innerText = "Unzipping...";
+                JSZip.loadAsync(e.target.result).then(async function(zip) {
+                    let count = 0;
+                    const promises = [];
+
+                    // Iterate files
+                    zip.forEach(function (relativePath, zipEntry) {
+                        if (zipEntry.name.toLowerCase().endsWith(".wav")) {
+                            // Extract key from filename (e.g. "AA.wav" -> "AA")
+                            // Clean up path: remove folder prefix, remove extension
+                            const cleanName = zipEntry.name.split('/').pop().replace('.wav', '').replace('.WAV', '').toUpperCase();
+                            
+                            // Map special cases if needed (e.g. "_H" -> "HH")
+                            let key = cleanName;
+                            if(key === "_H") key = "HH";
+
+                            const p = zipEntry.async("arraybuffer").then(async (buffer) => {
+                                try {
+                                    const audioBuffer = await ctx.decodeAudioData(buffer);
+                                    samples[key] = audioBuffer;
+                                    count++;
+                                } catch(err) {
+                                    console.warn("Skipped bad file:", zipEntry.name);
+                                }
+                            });
+                            promises.push(p);
+                        }
+                    });
+
+                    await Promise.all(promises);
+                    status.innerText = `Loaded ${count} phonemes!`;
+                    setTimeout(() => {
+                        document.getElementById('setup-interface').classList.add('hidden');
+                        powerOn();
+                    }, 1000);
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- 5. MANUAL MIC LOGIC ---
+        function startMicMode() {
+            document.getElementById('setup-menu').classList.add('hidden');
+            document.getElementById('mic-ui').classList.remove('hidden');
+            
+            const btnRec = document.getElementById('btn-rec');
+            
+            // Re-bind listeners for the manual flow
+            btnRec.addEventListener('click', async () => {
+                if(isInitialized) return; 
+                try {
+                    ctx = new AudioContext();
+                    await ctx.resume();
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    setupRecorderListeners(btnRec);
+                    isInitialized = true;
+                    updateRecUI();
+                } catch(e) { alert("Mic Error: " + e.message); }
+            });
+        }
+
+        function setupRecorderListeners(btn) {
+            const start = (e) => { e.preventDefault(); startRecording(); };
+            const stop = (e) => { e.preventDefault(); stopRecording(); };
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', stop);
+            btn.addEventListener('touchstart', start);
+            btn.addEventListener('touchend', stop);
+            btn.addEventListener('mouseleave', stop);
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const buf = await blob.arrayBuffer();
+                const audio = await ctx.decodeAudioData(buf);
+                
+                // Use simplified list for manual recording
+                const pKey = phonemeKeys[recIndex];
+                samples[pKey] = audio;
+                recIndex++;
+                updateRecUI();
+            };
+        }
+
+        function startRecording() {
+            if(!isInitialized || mediaRecorder.state === 'recording') return;
+            audioChunks = [];
+            mediaRecorder.start();
+            const btn = document.getElementById('btn-rec');
+            btn.classList.add('recording');
+            btn.classList.remove('ready');
+            btn.innerText = "REC";
+        }
+
+        function stopRecording() {
+            if(!isInitialized || mediaRecorder.state !== 'recording') return;
+            mediaRecorder.stop();
+            document.getElementById('btn-rec').classList.remove('recording');
+        }
+
+        function updateRecUI() {
+            if(recIndex >= phonemeKeys.length) {
+                document.getElementById('setup-interface').classList.add('hidden');
+                powerOn();
+                return;
+            }
+            const key = phonemeKeys[recIndex];
+            const btn = document.getElementById('btn-rec');
+            document.getElementById('rec-guide').innerHTML = `Say: <span style="color:var(--vfd-on); font-weight:bold;">${key}</span>`;
+            btn.innerText = "HOLD";
+            btn.classList.add('ready');
+            
+            const pct = (recIndex / phonemeKeys.length) * 100;
+            document.getElementById('rec-progress').style.width = pct + "%";
+            document.getElementById('rec-count').innerText = `${recIndex} / ${phonemeKeys.length}`;
+        }
+
+
+        // --- 6. AUDIO ENGINE (With Vintage Effects) ---
+        const slSpeed = document.getElementById('param-speed');
+        const slTrim = document.getElementById('param-trim');
+        const slFlow = document.getElementById('param-flow');
+        const slCrush = document.getElementById('param-crush');
+        
+        slSpeed.oninput = e => document.getElementById('val-speed').innerText = e.target.value + "x";
+        slTrim.oninput = e => document.getElementById('val-trim').innerText = e.target.value + "ms";
+        slFlow.oninput = e => document.getElementById('val-flow').innerText = e.target.value + "ms";
+        slCrush.oninput = e => document.getElementById('val-crush').innerText = e.target.value + "%";
+
+        function createCrusher(crushAmount) {
+            if(crushAmount < 0.05) return ctx.createGain();
+            const bufferSize = 4096;
+            const node = ctx.createScriptProcessor(bufferSize, 1, 1);
+            const bitDepth = 16 - (12 * crushAmount); 
+            const normFreq = 1 - (0.8 * crushAmount); 
+            const step = Math.pow(0.5, bitDepth);
+            let phaser = 0;
+            node.onaudioprocess = function(e) {
+                const input = e.inputBuffer.getChannelData(0);
+                const output = e.outputBuffer.getChannelData(0);
+                let lastVal = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    phaser += normFreq;
+                    if (phaser >= 1.0) {
+                        phaser -= 1.0;
+                        lastVal = step * Math.floor(input[i] / step + 0.5);
+                    }
+                    output[i] = lastVal;
+                }
+            };
+            return node;
+        }
+
+        function createBandpass(crushAmount) {
+             const filter = ctx.createBiquadFilter();
+             if(crushAmount > 0.1) {
+                 filter.type = 'bandpass';
+                 filter.frequency.value = 2000; 
+                 filter.Q.value = 0.5 + (2.0 * crushAmount); 
+             } else { filter.type = 'allpass'; }
+             return filter;
+        }
+
+        function sayInput() {
+            const text = document.getElementById('custom-input').value.toUpperCase().trim();
+            if(!text) return;
+            // Simple mapping to phonemes.
+            // This is "dumb" mapping. Ideally uses a dictionary.
+            const phos = [];
+            text.split('').forEach(char => {
+                if(samples[char]) phos.push(char); 
+                else if(char==='A' && samples['AE']) phos.push("AE");
+                else if(char==='O' && samples['AA']) phos.push("AA");
+                else if(samples["AA"]) phos.push("AA"); // Fallback
+            });
+            speakPhonemes(phos);
+        }
+
+        function speakPhonemes(phoList) {
+            if(!ctx) return;
+            const now = ctx.currentTime;
+            let time = now;
+            
+            const rate = parseFloat(slSpeed.value);
+            const trimMs = parseInt(slTrim.value) / 1000; 
+            const flowMs = parseInt(slFlow.value) / 1000; 
+            const crushAmt = parseInt(slCrush.value) / 100;
+            
+            const busGain = ctx.createGain();
+            const crusher = createCrusher(crushAmt);
+            const filter = createBandpass(crushAmt);
+            const compressor = ctx.createDynamicsCompressor(); 
+
+            busGain.connect(crusher);
+            crusher.connect(filter);
+            filter.connect(compressor);
+            compressor.connect(ctx.destination);
+
+            phoList.forEach(pid => {
+                if(samples[pid]) {
+                    const src = ctx.createBufferSource();
+                    src.buffer = samples[pid];
+                    src.playbackRate.value = rate;
+                    
+                    const gain = ctx.createGain();
+                    src.connect(gain);
+                    gain.connect(busGain); 
+                    
+                    src.start(time);
+                    
+                    const playDur = src.buffer.duration / rate;
+                    const effectiveDur = Math.max(0.05, playDur - trimMs);
+                    
+                    // Crossfade Envelope
+                    gain.gain.setValueAtTime(0, time);
+                    gain.gain.linearRampToValueAtTime(1, time + 0.02);
+                    gain.gain.setValueAtTime(1, time + effectiveDur);
+                    gain.gain.linearRampToValueAtTime(0, time + effectiveDur + 0.05);
+                    
+                    src.stop(time + effectiveDur + 0.1);
+                    time += Math.max(0.01, effectiveDur - flowMs);
+                }
+            });
+            
+            setTimeout(() => {
+                busGain.disconnect();
+                crusher.disconnect();
+                filter.disconnect();
+                compressor.disconnect();
+            }, (time - now) * 1000 + 1000);
+        }
+
+        // --- 7. UNIT STATE ---
+        const display = document.getElementById('display');
+        const customInput = document.getElementById('custom-input');
+        let buffer = "";
+
+        function powerOn() {
+            isPowered = true;
+            document.getElementById('unit').classList.add('powered-on');
+            display.innerText = "READY";
+            customInput.disabled = false;
+            slSpeed.disabled = false;
+            slTrim.disabled = false;
+            slFlow.disabled = false;
+            slCrush.disabled = false;
+        }
+
+        function powerOff() {
+            isPowered = false;
+            document.getElementById('unit').classList.remove('powered-on');
+            display.innerText = "";
+            customInput.disabled = true;
+            slSpeed.disabled = true;
+            slTrim.disabled = true;
+            slFlow.disabled = true;
+            slCrush.disabled = true;
+            if(ctx) ctx.suspend();
+        }
+
+        function press(char) {
+            if(!isPowered) return;
+            buffer += char;
+            customInput.value = buffer;
+            display.innerText = buffer.slice(-9);
+            // Try to map single letter to phoneme sound
+            let k = char;
+            if(char === 'A' && samples['AE']) k = 'AE';
+            if(char === 'E' && samples['EH']) k = 'EH';
+            if(samples[k]) speakPhonemes([k]);
+        }
+
+        function erase() {
+            if(!isPowered) return;
+            buffer = buffer.slice(0, -1);
+            customInput.value = buffer;
+            display.innerText = buffer || "READY";
+        }
+
+        function enter() {
+            if(!isPowered) return;
+            sayInput();
+        }
+
+    </script>
+</body>
+</html>
